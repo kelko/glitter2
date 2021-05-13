@@ -1,0 +1,10 @@
+global:
+  globalVal:
+    value: 'Set in render_simple.glitter'
+
+injection:
+  - globalVal:
+      variable: globalVal
+  
+template: |-
+  The value of `globalVal` is: *{globalVal}

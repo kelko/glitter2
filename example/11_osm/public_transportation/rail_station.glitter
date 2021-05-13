@@ -1,0 +1,35 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POINT
+    NAME "trainstation"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_transport_points using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "station")
+    
+    CLASS
+      MAXSCALEDENOM 5000000
+      STYLE
+        SYMBOL "circle"        
+        COLOR 196 196 196
+        OUTLINECOLOR 128 128 128
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Train Station"
+      "wms_group_title" "*{group.title}"
+    END
+  END

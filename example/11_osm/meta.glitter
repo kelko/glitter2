@@ -1,0 +1,39 @@
+injection:
+  - meta:
+      variable: meta
+
+template: |
+  WEB
+    METADATA
+      # Basic Info
+      "wms_title" "*{meta.title}"
+      "wms_abstract" "*{meta.abstract}"
+      
+      # Technical info about capabilities
+      "wms_srs" "EPSG:*{meta.primaryEpsg} *{meta.additionalEpsg}"
+      "wms_onlineresource" "*{meta.serviceUrl}"
+      "wms_enable_request" "*"
+      "ows_enable_request" "*"
+      "wms_encoding" "UTF-8"
+      
+      # contact info
+      "wms_addresstype" "postal"
+      "wms_address" "*{meta.contact.address}"
+      "wms_city" "*{meta.contact.city}"
+      "wms_stateorprovince" "*{meta.contact.state}"
+      "wms_postcode" "*{meta.contact.postcode}"
+      "wms_country" "*{meta.contact.country}"
+      "wms_contactperson" "*{meta.contact.person}"
+      "wms_contactorganization" "*{meta.contact.organization}"
+      "wms_contactelectronicmailaddress" "*{meta.contact.mail}"
+      "wms_contactposition" "pointOfContact"
+      
+      # other stuff
+      "wms_bgcolor" "0xFFFFFF"
+      "wms_feature_info_mime_type" "text/plain"
+      "wms_getcapabilities_version" "1.1.1"
+      "wms_bbox_extended" "true"
+      "wms_getmap_formatlist" "image/png,image/jpeg,image/tiff,image/svg+xml,application/x-pdf,image/png; mode=8bit"
+      "labelcache_map_edge_buffer" "-10"
+    END
+  END

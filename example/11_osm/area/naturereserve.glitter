@@ -1,0 +1,47 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "naturereserve"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_landusages using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "nature_reserve")
+    
+    CLASS
+      MAXSCALEDENOM 250000
+      MINSCALEDENOM 25000
+      STYLE
+        OUTLINECOLOR 25 107 25
+        WIDTH 2
+        PATTERN 5 10 END
+        OPACITY 25
+      END
+    END
+    
+    CLASS
+      MAXSCALEDENOM 25000
+      STYLE
+        OUTLINECOLOR 25 107 25
+        WIDTH 2
+        PATTERN 5 10 END
+        OPACITY 25
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Nature Reserve"
+      "wms_group_title" "*{group.title}"
+    END
+  END

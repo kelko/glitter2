@@ -1,0 +1,105 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "bstr_incity"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_mainroads using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[ref]" ~ "B\s+.*")
+    
+    CLASSITEM "type"
+    CLASS
+      MINSCALEDENOM 2000000
+      STYLE
+        WIDTH 1
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 1000000
+      MAXSCALEDENOM 2000000
+      STYLE
+        WIDTH 3
+        COLOR "#BA8926"
+        OUTLINECOLOR 196 196 196
+        OUTLINEWIDTH 1
+        LINECAP butt
+      END
+    END
+
+    CLASS
+      MINSCALEDENOM 500000
+      MAXSCALEDENOM 1000000
+      STYLE
+        WIDTH 1
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+
+    CLASS
+      MINSCALEDENOM 250000
+      MAXSCALEDENOM 500000
+      STYLE
+        WIDTH 1
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+
+    CLASS
+      MINSCALEDENOM 125000
+      MAXSCALEDENOM 250000
+      STYLE
+        WIDTH 1
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+
+    CLASS
+      MINSCALEDENOM 64000
+      MAXSCALEDENOM 125000
+      STYLE
+        WIDTH 3
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 32000
+      MAXSCALEDENOM 64000
+      STYLE
+        WIDTH 3
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+    
+    CLASS
+      MAXSCALEDENOM 32000
+      STYLE
+        WIDTH 1
+        COLOR "#BA8926"
+        LINECAP butt
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "BStr in City"
+      "wms_group_title" "*{group.title}"
+    END
+  END

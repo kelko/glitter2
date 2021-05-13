@@ -1,0 +1,12 @@
+injection:
+  - rendered:
+      render: "b.glitter"
+
+#Result:
+#> global ignored
+#> not passed hello
+#> global ignored
+#> passed hello
+
+template: |
+  *> rendered

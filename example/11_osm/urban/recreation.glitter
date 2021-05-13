@@ -1,0 +1,34 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "recreation"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_landusages using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "playground" OR "[type]" = "recreation_ground" OR "[type]" = "sports_centre")
+    
+    CLASS
+      MAXSCALEDENOM 128000
+      STYLE
+        COLOR "#E1F3C7"
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Recreation areas"
+      "wms_group_title" "*{group.title}"
+    END
+  END

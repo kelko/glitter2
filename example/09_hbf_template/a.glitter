@@ -1,0 +1,36 @@
+injection:
+  - val1:
+      value: "Hi"
+    val2:
+      value: 123.3
+  - val1:
+      value: "Hello"
+    val2:
+      value: 30
+
+#Result:
+#> This is a test containing a header and a footer.
+#> Every injection value set is separated by a blank line:
+#> 
+#> The Greeting is Hi
+#> And the value is 123.3
+#> 
+#> The Greeting is Hello
+#> And the value is 30
+#> 
+#> END OF FILE
+
+template:
+  header:
+    value: |
+      This is a test containing a header and a footer.
+      Every injection value set is separated by a blank line:
+  body: 
+    value: |
+
+      The Greeting is *{val1}
+      And the value is *{val2}
+  footer:
+    value: |-
+      END OF FILE
+

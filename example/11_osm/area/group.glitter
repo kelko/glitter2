@@ -1,0 +1,38 @@
+local:
+  group:
+    children:
+      name:
+        value: "area"
+      title:
+        value: "Area"
+
+injection:
+  - farmland:
+      render: farmland.glitter
+      parameter:
+        group:
+          variable: group
+    forest:
+      render: forest.glitter
+      parameter:
+        group:
+          variable: group
+    meadow:
+      render: meadow.glitter
+      parameter:
+        group:
+          variable: group
+    naturereserve:
+      render: naturereserve.glitter
+      parameter:
+        group:
+          variable: group
+
+template: |
+  *> naturereserve
+
+  *> meadow
+
+  *> forest
+
+  *> farmland

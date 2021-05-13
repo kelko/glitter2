@@ -1,0 +1,72 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "usefulareas"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_landusages using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "residential" OR "[type]" = "industrial" OR "[type]" = "commercial" OR "[type]" = "retail" OR "[type]" = "cemetery" OR "[type]" = "parking" OR "[type]" = "pitch")
+    
+    CLASSITEM "type"
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION "residential"
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION "industrial"
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION "commercial"
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION "retail"
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION "cemetery"
+      
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END
+    CLASS	
+      MAXSCALEDENOM 500000
+      EXPRESSION ('[type]' = "parking" OR '[type]' = "pitch")
+      STYLE
+        COLOR "#E1DEDB"
+      END
+    END	
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Useful Areas"
+      "wms_group_title" "*{group.title}"
+    END	
+  END

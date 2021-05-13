@@ -1,0 +1,38 @@
+local:
+  kelko:
+    children:
+      name:
+        value: ":kelko:"
+      greeting:
+        value: "Hi"
+      cv:
+        quote: "kelko.cv"
+  navar:
+    children:
+      name:
+        value: "Negh'Var"
+      greeting:
+        value: "Lok'Thar"
+      cv:
+        quote: "navar.cv"
+
+injection:
+  - person:
+      variable: kelko
+  - person:
+      variable: navar
+
+#Result:
+#> Hi :kelko:
+#> Hi, this is the 
+#> file named "kelko.cv"
+#> And now comes a blank line
+#>
+#> There it was. Did you see it?
+#> Lok'Thar Negh'Var
+#> Hello,
+#> and this file is Named "neghvar.cv"
+
+template: |-
+  *{person.greeting} *{person.name}
+  *> person.cv

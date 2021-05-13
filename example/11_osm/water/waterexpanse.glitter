@@ -1,0 +1,40 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "waterexpanse"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_waterareas using unique osm_id using srid=*{meta.primaryEpsg}"
+    
+    CLASS
+      MAXSCALEDENOM 1250000
+      MINSCALEDENOM 32000
+      STYLE
+        COLOR "#687CDD"
+      END
+    END
+    
+    CLASS
+      MAXSCALEDENOM 32000
+      STYLE
+        COLOR "#687CDD"
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Water Expanse"
+      "wms_group_title" "*{group.title}"
+    END
+  END

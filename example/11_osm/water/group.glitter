@@ -1,0 +1,24 @@
+local:
+    group:
+      children:
+        name:
+          value: "water"
+        title:
+          value: "Water"
+
+injection:
+  - waterexpanse:
+      render: waterexpanse.glitter
+      parameter:
+        group:
+          variable: group
+    river:
+      render: river.glitter
+      parameter:
+        group:
+          variable: group
+
+template: |
+    *> waterexpanse
+
+    *> river

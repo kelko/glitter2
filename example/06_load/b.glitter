@@ -1,0 +1,13 @@
+local:
+  got:
+    load: "l_hierarchy.gloss"
+
+injection:
+  - val1:
+      variable: got.loaded1.subval1
+
+#Result:
+#> Subval
+
+template: |-
+  *{val1}

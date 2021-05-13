@@ -1,0 +1,3 @@
+
+The Greeting is *{val1}
+And the value is *{val2}

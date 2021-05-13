@@ -1,0 +1,204 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "mainroads"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_mainroads using unique osm_id using srid=*{meta.primaryEpsg}"
+    PROCESSING "NATIVE_FILTER=ref IS NULL OR ref NOT LIKE 'B%'"
+    
+    CLASSITEM "type"
+    CLASS
+      MINSCALEDENOM 500000
+      MAXSCALEDENOM 750000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+      
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 250000
+      MAXSCALEDENOM 500000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+            
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 125000
+      MAXSCALEDENOM 250000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+      
+      STYLE
+        WIDTH 3
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+      
+    END
+    CLASS
+      MINSCALEDENOM 64000
+      MAXSCALEDENOM 125000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+      
+      STYLE
+        WIDTH 4
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 32000
+      MAXSCALEDENOM 64000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+      
+      STYLE
+        WIDTH 5
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MAXSCALEDENOM 32000
+      EXPRESSION ('[type]' = 'primary' OR '[type]' = 'primary_link')
+      
+      STYLE
+        WIDTH 6
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    
+    CLASS
+      MINSCALEDENOM 250000
+      MAXSCALEDENOM 500000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 1.5
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 125000
+      MAXSCALEDENOM 250000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 96000
+      MAXSCALEDENOM 125000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 64000
+      MAXSCALEDENOM 96000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 2.5
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 32000
+      MAXSCALEDENOM 64000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 3
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MAXSCALEDENOM 32000
+      EXPRESSION ('[type]' = 'secondary' OR '[type]' = 'secondary_link')
+      
+      STYLE
+        WIDTH 4
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    
+    CLASS
+      MINSCALEDENOM 125000
+      MAXSCALEDENOM 250000
+      EXPRESSION ('[type]' = 'tertiary' OR '[type]' = 'tertiary_link')
+      
+      STYLE
+        WIDTH 0.5
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 64000
+      MAXSCALEDENOM 125000
+      EXPRESSION ('[type]' = 'tertiary' OR '[type]' = 'tertiary_link')
+      
+      STYLE
+        WIDTH 1
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MINSCALEDENOM 32000
+      MAXSCALEDENOM 64000
+      EXPRESSION ('[type]' = 'tertiary' OR '[type]' = 'tertiary_link')
+      
+      STYLE
+        WIDTH 1.5
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    CLASS
+      MAXSCALEDENOM 32000
+      EXPRESSION ('[type]' = 'tertiary' OR '[type]' = 'tertiary_link')
+      
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+        LINECAP butt
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Main Roads"
+      "wms_group_title" "*{group.title}"
+    END
+  END

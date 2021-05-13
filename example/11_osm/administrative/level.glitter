@@ -1,0 +1,36 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+    level:
+      variable: level
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "admin*{level}"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_admin using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[admin_level]" = *{level})
+    
+    CLASS
+      STYLE
+        OUTLINECOLOR 128 128 128
+        OUTLINEWIDTH 1
+        PATTERN 3 3 END
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Administration Districts, Level *{level}"
+      "wms_group_title" "*{group.title}"
+    END
+  END

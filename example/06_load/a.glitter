@@ -1,0 +1,15 @@
+local:
+  got:
+    load: "l_simple.gloss"
+
+injection:
+  - val1:
+      variable: got.loaded1
+    val2:
+      variable: got.loaded2
+
+#Result:
+#> Val1 Val2
+
+template: |-
+  *{val1} *{val2}

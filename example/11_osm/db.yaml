@@ -1,0 +1,5 @@
+host: "osm"
+name: "osm"
+user: "osm"
+password: "osm"
+port: 5432

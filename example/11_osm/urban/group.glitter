@@ -1,0 +1,38 @@
+local:
+  group:
+    children:
+      name:
+        value: "urban"
+      title:
+        value: "Urban"
+
+injection:
+  - areas:
+      render: areas.glitter
+      parameter:
+        group:
+          variable: group
+    buildings:
+      render: buildings.glitter
+      parameter:
+        group:
+          variable: group
+    localPark:
+      render: local_parks.glitter
+      parameter:
+        group:
+          variable: group
+    recreation: 
+      render: recreation.glitter
+      parameter:
+        group:
+          variable: group
+
+template: |
+  *> areas
+
+  *> localPark
+
+  *> recreation
+
+  *> buildings

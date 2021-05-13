@@ -1,0 +1,35 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "unclassified"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_minorroads using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "unclassified")
+    
+    CLASS
+      MAXSCALEDENOM 64000
+      
+      STYLE
+        WIDTH 2
+        COLOR "#DEB35E"
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Unclassified roads"
+      "wms_group_title" "*{group.title}"
+    END
+  END

@@ -1,0 +1,9 @@
+injection:
+  - values:
+      import: vals.yaml
+
+#Result:
+#> Hi 123.3 Hello
+
+template: |-
+  *{values.val1} *{values.val2} *{values.val3.val1}

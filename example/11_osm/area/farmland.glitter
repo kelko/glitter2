@@ -1,0 +1,33 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "farmland"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_landusages using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "farmyard" OR "[type]" = "farm" OR "[type]" = "farmland")
+    
+    CLASS	
+      MAXSCALEDENOM 1250000
+      STYLE
+        COLOR 233 216 189
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Farmland"
+      "wms_group_title" "*{group.title}"
+    END
+  END

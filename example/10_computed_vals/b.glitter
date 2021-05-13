@@ -1,0 +1,14 @@
+injection:
+  - val1:
+      value: Hello World
+  - val1:
+      value: Hallo Welt
+  - val1:
+      value: Ala ma kota
+
+# Result
+# > In Iteration no.1 I say "Hello World"
+# > In Iteration no.2 I say "Hallo Welt"
+# > In Iteration no.3 I say "Ala ma kota"
+
+template: In Iteration no.*{$iteration} I say "*{val1}"

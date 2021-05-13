@@ -1,0 +1,36 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "buildings"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_buildings using unique osm_id using srid=*{meta.primaryEpsg}"
+    
+    CLASS
+      MAXSCALEDENOM 32000
+      STYLE
+        OUTLINECOLOR 168 168 168
+        LINECAP square
+        LINEJOIN miter
+        COLOR 200 200 200
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Buildings"
+      "wms_group_title" "*{group.title}"
+    END
+  END

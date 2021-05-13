@@ -1,0 +1,17 @@
+name: MapName
+title: Some Title
+abstract: Give an abstract
+primaryEpsg: "25832"
+additionalEpsg: EPSG:4326 EPSG:25830 EPSG:25831 EPSG:25833 EPSG:25834 EPSG:31466 EPSG:31467 EPSG:31468 EPSG:32632 EPSG:3857
+extent: "412263 5471416 586382 5722806" # this is valid for Hessen, Germany
+layerExtent: "412130.174744412 5471407.28848514 586414.597143228 5820211.77573807"
+serviceUrl: http://example.com/some/path?
+contact:
+  address: Some Street 1
+  city: Someplace
+  state: Foo
+  postcode: "00000"
+  country: Germany
+  person: ":kelko:"
+  organization: ":kelko:"
+  mail: "kelko@example.com"

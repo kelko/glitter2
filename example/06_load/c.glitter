@@ -1,0 +1,23 @@
+local:
+  got:
+    load: "l_passthrough.gloss"
+    parameter:
+      param1:
+          value: "Val1"
+      param2:
+        children: 
+          value:
+            value: 'Val2'
+
+
+injection:
+  - val1:
+      variable: got.loaded1
+    val2:
+      variable: got.loaded2
+
+#Result:
+#> Val1 Val2
+
+template: |-
+  *{val1} *{val2}

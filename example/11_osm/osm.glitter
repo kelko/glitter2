@@ -1,0 +1,58 @@
+global:
+  meta:
+    import: ./meta.yaml
+  db:
+    import: ./db.yaml
+
+injection:
+  - global: 
+      variable: meta
+    metaBlock: 
+      render: meta.glitter
+    symbols:
+      quote: symbols.map
+    administrative:
+      render: administrative/group.glitter
+    area:
+      render: area/group.glitter
+    road:
+      render: road/group.glitter
+    public_transportation:
+      render: public_transportation/group.glitter
+    urban:
+      render: urban/group.glitter
+    water:
+      render: water/group.glitter
+
+template: |
+  MAP
+    FONTSET "fonts.lst"
+    IMAGETYPE png
+    MAXSIZE 5000
+    SIZE 800 800
+    RESOLUTION 72
+    DEFRESOLUTION 72
+    EXTENT *{global.extent}
+    UNITS METERS
+    IMAGECOLOR 255 255 255
+    NAME "*{global.name}"
+
+  *> metaBlock
+
+    CONFIG "MS_ERRORFILE" "stderr"
+    CONFIG "PROJ_LIB" "/usr/share/proj"
+
+    PROJECTION
+      "init=epsg:*{global.primaryEpsg}"
+    END
+
+  *> symbols
+
+  *> area
+  *> urban
+  *> water
+  *> public_transportation
+  *> road
+  *> administrative
+
+  END

@@ -1,0 +1,56 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "rails"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_railways using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "rail" OR "[type]" = "monorail" OR "[type]" = "lightrail")
+    
+    CLASSITEM "type"
+    CLASS
+      MAXSCALEDENOM 128000
+      MINSCALEDENOM 32000
+      STYLE
+        COLOR 255 255 255
+        WIDTH 1
+        OUTLINECOLOR 128 128 128
+        OUTLINEWIDTH 0.5
+      END
+      STYLE
+        WIDTH 1
+        COLOR 128 128 128
+        PATTERN 3 3 END
+      END
+    END
+    CLASS
+      MAXSCALEDENOM 32000
+      STYLE
+        COLOR 255 255 255
+        WIDTH 2
+        OUTLINECOLOR 128 128 128
+        OUTLINEWIDTH 0.5
+      END
+      STYLE
+        WIDTH 2
+        COLOR 128 128 128
+        PATTERN 16 16 END
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Rails"
+      "wms_group_title" "*{group.title}"
+    END
+  END

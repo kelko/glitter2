@@ -1,0 +1,45 @@
+local:
+  group:
+    children:
+      name:
+        value: public_transportation
+      title:
+        value: Public Transportation
+
+injection:
+  - railway:
+      render: railway.glitter
+      parameter:
+        group:
+          variable: group
+    railStation:
+      render: rail_station.glitter
+      parameter:
+        group:
+          variable: group
+    tramway:
+      render: tramway.glitter
+      parameter:
+        group:
+          variable: group
+    tramStation:
+      render: tram_station.glitter
+      parameter:
+        group:
+          variable: group
+    busStop:
+      render: bus_stop.glitter
+      parameter:
+        group:
+          variable: group
+
+template: |
+  *> railway
+
+  *> railStation
+
+  *> tramway
+
+  *> tramStation
+
+  *> busStop

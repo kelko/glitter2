@@ -1,0 +1,59 @@
+local:
+  group:
+    children:
+      name:
+        value: "roads"
+      title:
+        value: "Roads"
+
+injection:
+  - unclassified:
+      render: unclassified.glitter
+      parameter:
+        group:
+          variable: group
+    service:
+      render: service.glitter
+      parameter:
+        group:
+          variable: group
+    residential:
+      render: residential.glitter
+      parameter:
+        group:
+          variable: group
+    mainroad:
+      render: mainroad.glitter
+      parameter:
+        group:
+          variable: group
+    bstrIncity:
+      render: bstr_incity.glitter
+      parameter:
+        group:
+          variable: group
+    bstrOutside:
+      render: bstr_outside.glitter
+      parameter:
+        group:
+          variable: group
+    motorway:
+      render: motorway.glitter
+      parameter:
+        group:
+          variable: group
+
+template: |
+  *> unclassified
+
+  *> service
+
+  *> residential
+
+  *> mainroad
+
+  *> bstrIncity
+
+  *> bstrOutside
+
+  *> motorway

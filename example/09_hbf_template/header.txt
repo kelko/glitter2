@@ -1,0 +1,2 @@
+This is a test containing a header and a footer.
+Every injection value set is separated by a blank line:

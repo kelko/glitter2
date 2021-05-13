@@ -1,0 +1,16 @@
+injection:
+  - rendered: 
+      render: "../01_single_injection/a.glitter"
+  - rendered:
+      render: "../01_single_injection/b.glitter"
+  - rendered:
+      render: "../02_multiple_injection/a.glitter"
+
+#Result:
+#> Hi 123.3
+#> Hi 123.3 Hello
+#> Hi 123.3
+#> Hello 30
+
+template: |
+  *> rendered

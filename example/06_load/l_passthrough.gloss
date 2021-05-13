@@ -1,0 +1,4 @@
+loaded1:
+  variable: param1
+loaded2:
+  variable: param2.value

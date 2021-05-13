@@ -1,0 +1,23 @@
+local:
+  kelko: 
+      value: ":kelko:"
+  someOther:
+    children:
+      val1: 
+        value: 10
+      val2: 
+        value: 123.4
+
+injection:
+  - val1: 
+      value: "Hi"
+    iKelko: 
+      variable: kelko
+    val2: 
+      variable: someOther.val2
+
+#Result:
+#> Hi :kelko: 123.4
+
+template: |-
+  *{val1} *{iKelko} *{val2}

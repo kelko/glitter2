@@ -1,0 +1,41 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "rivers"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_waterways using unique osm_id using srid=*{meta.primaryEpsg}"
+    
+    CLASS
+      MINSCALEDENOM 200000
+      MAXSCALEDENOM 500000
+      STYLE
+        WIDTH 0.5
+        COLOR "#687CDD"
+      END
+    END
+    CLASS
+      MAXSCALEDENOM 20000
+      STYLE
+        WIDTH 2
+        COLOR "#687CDD"
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Rivers"
+      "wms_group_title" "*{group.title}"
+    END
+  END

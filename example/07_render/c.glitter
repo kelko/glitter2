@@ -1,0 +1,20 @@
+injection:
+  - rendered:
+      render: "render_with_select.glitter"
+      parameter:
+        param1:
+          value: 'holla'
+  - rendered:
+      render: "render_with_select.glitter"
+      parameter:
+        param1:
+          value: "hello"
+
+#Result:
+#> global ignored
+#> not passed hello
+#> global ignored
+#> passed hello
+
+template: |
+  *> rendered

@@ -1,0 +1,8 @@
+result: 
+  select:
+    - case: "(= (GET val1.greet) 'hallo'"
+      children:
+        title:
+          variable: val1.gBye
+        body:
+          value: "welt"

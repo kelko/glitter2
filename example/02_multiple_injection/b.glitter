@@ -1,0 +1,20 @@
+injection:
+  - val1: 
+      value: Hi
+    val2: 
+      value: 123.3
+  - val1: 
+      value: Hello
+    val2: 
+      value: 30
+  - val1: 
+      value: Ciao
+
+#Result:
+#> Hi 123.3
+#> Hello 30
+#> Ciao 30
+
+template: |-
+  *{val1} *{val2}
+

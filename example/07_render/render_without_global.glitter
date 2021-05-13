@@ -1,0 +1,6 @@
+injection:
+  - globalVal:
+      variable: globalVal
+  
+template: |-
+  The value of `globalVal` is: *{globalVal}

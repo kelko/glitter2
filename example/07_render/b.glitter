@@ -1,0 +1,16 @@
+global:
+  globalVal:
+    value: "Set in b.glitter"
+
+injection:
+  - rendered:
+      render: "render_without_global.glitter"
+  - rendered:
+      render: "render_with_own_global.glitter"
+
+#Result:
+#> The value of `globalVal` is: Set in b.glitter
+#> The value of `globalVal` is: Set in b.glitter
+
+template: |
+    *> rendered

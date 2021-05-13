@@ -1,0 +1,33 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE POLYGON
+    NAME "meadow"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE POSTGIS
+    PROCESSING "CLOSE_CONNECTION=DEFER"
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_landusages using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "meadow" OR "[type]" = "scrub")
+    
+    CLASS
+      MAXSCALEDENOM 1250000
+      STYLE
+        COLOR "#E1F3C7"
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Meadow"
+      "wms_group_title" "*{group.title}"
+    END
+  END

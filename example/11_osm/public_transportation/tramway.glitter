@@ -1,0 +1,38 @@
+injection:
+  - db:
+      variable: db
+    meta:
+      variable: meta
+    group:
+      variable: group
+
+
+template: |
+  LAYER
+    STATUS OFF
+    TYPE LINE
+    NAME "tramway"
+    GROUP "*{group.name}"
+    CONNECTIONTYPE postgis
+    CONNECTION "host=*{db.host} dbname=*{db.name} user=*{db.user} password=*{db.password} port=*{db.port}"
+    DATA "geometry from osm_railways using unique osm_id using srid=*{meta.primaryEpsg}"
+    FILTER ("[type]" = "tram")
+    
+    CLASSITEM "type"
+    CLASS
+      MAXSCALEDENOM 128000
+      STYLE
+        WIDTH 1
+        COLOR 196 196 196
+        OUTLINECOLOR 128 128 128
+        OUTLINEWIDTH 1
+      END
+    END
+    
+    METADATA
+      "wms_extent" "*{meta.layerExtent}"
+      "wms_title" "Tram Way"
+      "wms_group_title" "*{group.title}"
+    END
+  END
+

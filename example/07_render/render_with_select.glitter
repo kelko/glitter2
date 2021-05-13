@@ -1,0 +1,23 @@
+global:
+  ignoreme:
+    value: 'yes!'
+
+local:
+  val1:
+    select:
+      - case: (DEFINED ignoreme)
+        value: global not ignored
+      - value: global ignored
+  val2:
+    select:
+        - case: (= (GET param1) 'hello')
+          value: passed hello
+        - value: not passed hello
+
+injection:
+  - result1: val1
+    result2: val2
+  
+template: |-
+  *{result1}
+  *{result2}

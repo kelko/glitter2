@@ -1,0 +1,8 @@
+injection:
+  - {}
+
+#Result
+#> This file is named "a.glitter"
+
+template: |-
+  This file is named "*{$filename}"
