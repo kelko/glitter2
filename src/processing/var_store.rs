@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use crate::config::model::RawValue;
-use crate::processing::{split_value_path, VariableDefinitionBlock, ProcessingContext};
+use crate::processing::{split_value_path, ProcessingContext, VariableDefinitionBlock};
 
-use crate::config::model::{ValueDefinition};
+use crate::config::model::ValueDefinition;
 
 pub(crate) enum ProcessingInstruction {
     Load(String, VariableDefinitionBlock),
@@ -22,41 +22,54 @@ pub(crate) enum StoredVariable {
 }
 
 pub struct VariableStore {
-    inner_store : VariableDefinitionBlock,
-    parameter : VariableDefinitionBlock,
+    inner_store: VariableDefinitionBlock,
+    parameter: VariableDefinitionBlock,
     source_context: Option<Rc<ProcessingContext>>,
 }
 
 impl VariableStore {
-    pub(crate) fn with_context(variable_definition: VariableDefinitionBlock, parameter: VariableDefinitionBlock, source_context: Rc<ProcessingContext>) -> Self { 
-        VariableStore { 
+    pub(crate) fn with_context(
+        variable_definition: VariableDefinitionBlock,
+        parameter: VariableDefinitionBlock,
+        source_context: Rc<ProcessingContext>,
+    ) -> Self {
+        VariableStore {
             inner_store: variable_definition,
             parameter,
-            source_context: Some(source_context)
+            source_context: Some(source_context),
         }
     }
 
     pub(crate) fn contains(&self, key: &String) -> bool {
-        self.inner_store.get(key).is_some() || (self.source_context.is_some() && self.parameter.get(key).is_some())
+        self.inner_store.get(key).is_some()
+            || (self.source_context.is_some() && self.parameter.get(key).is_some())
     }
 
-    pub(crate) fn resolve(&self, key_path: Vec<String>) -> Result<StoredVariable,()> {
+    pub(crate) fn resolve(&self, key_path: Vec<String>) -> Result<StoredVariable, ()> {
         if let Some(var) = Self::resolve_in_map(&self.inner_store, key_path.clone()) {
             return Ok(var);
         }
-        
+
         if let Some(source_context) = &self.source_context {
             match Self::resolve_in_map(&self.parameter, key_path) {
                 None => (),
-                Some(StoredVariable::LocalReference(path_parts)) => return Ok(StoredVariable::DistantReference(path_parts, Rc::clone(source_context))),
-                Some(v) => return Ok(v)
+                Some(StoredVariable::LocalReference(path_parts)) => {
+                    return Ok(StoredVariable::DistantReference(
+                        path_parts,
+                        Rc::clone(source_context),
+                    ))
+                }
+                Some(v) => return Ok(v),
             };
         }
 
         Err(())
     }
 
-    fn resolve_in_map(map: &VariableDefinitionBlock, mut key_path: Vec<String>) -> Option<StoredVariable> {
+    fn resolve_in_map(
+        map: &VariableDefinitionBlock,
+        mut key_path: Vec<String>,
+    ) -> Option<StoredVariable> {
         if key_path.len() < 1 {
             return None;
         }
@@ -69,31 +82,29 @@ impl VariableStore {
                 let path_parts = Self::new_value_path(split_value_path(value_path), key_path);
 
                 Some(StoredVariable::LocalReference(path_parts))
-            },
-            Some(ValueDefinition::Quote(file_path)) => Some(
-                StoredVariable::Instruction(
-                    ProcessingInstruction::Quote(file_path.clone()),
-                    key_path
-                )
-            ),
-            Some(ValueDefinition::Import(file_path)) => Some(
-                StoredVariable::Instruction(
-                    ProcessingInstruction::Import(file_path.clone()),
-                    key_path
-                )
-            ),
-            Some(ValueDefinition::Load(load_statement)) => Some(
-                StoredVariable::Instruction(
-                    ProcessingInstruction::Load(load_statement.file.clone(), load_statement.parameter.clone()),
-                    key_path
-                )
-            ),
-            Some(ValueDefinition::Render(load_statement)) => Some(
-                StoredVariable::Instruction(
-                    ProcessingInstruction::Render(load_statement.file.clone(), load_statement.parameter.clone()),
-                    key_path
-                )
-            ),
+            }
+            Some(ValueDefinition::Quote(file_path)) => Some(StoredVariable::Instruction(
+                ProcessingInstruction::Quote(file_path.clone()),
+                key_path,
+            )),
+            Some(ValueDefinition::Import(file_path)) => Some(StoredVariable::Instruction(
+                ProcessingInstruction::Import(file_path.clone()),
+                key_path,
+            )),
+            Some(ValueDefinition::Load(load_statement)) => Some(StoredVariable::Instruction(
+                ProcessingInstruction::Load(
+                    load_statement.file.clone(),
+                    load_statement.parameter.clone(),
+                ),
+                key_path,
+            )),
+            Some(ValueDefinition::Render(load_statement)) => Some(StoredVariable::Instruction(
+                ProcessingInstruction::Render(
+                    load_statement.file.clone(),
+                    load_statement.parameter.clone(),
+                ),
+                key_path,
+            )),
             Some(ValueDefinition::Select(_)) => todo!(),
             None => None,
         }
@@ -113,8 +124,8 @@ impl VariableStore {
 }
 
 impl From<VariableDefinitionBlock> for VariableStore {
-    fn from(variable_definition: VariableDefinitionBlock) -> Self { 
-        VariableStore { 
+    fn from(variable_definition: VariableDefinitionBlock) -> Self {
+        VariableStore {
             inner_store: variable_definition,
             parameter: VariableDefinitionBlock::new(),
             source_context: None,
