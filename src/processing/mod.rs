@@ -7,6 +7,10 @@ use std::rc::Rc;
 
 use snafu::ResultExt;
 
+use crate::rendering::{
+    FailedResolvingVariable, InvalidSubRenderConfig, LoadCommandFailed, TemplateRenderError,
+    ValueRenderError, ValueRenderer,
+};
 use crate::{
     config::{
         model::{
@@ -18,11 +22,7 @@ use crate::{
     processing::var_store::{ProcessingInstruction, StoredVariable, VariableStore},
     rendering::{
         var_rendering::{RenderableQuote, RenderableRawValue, RenderableVariable, SubRender},
-        LoadError,
-    },
-    rendering::{
-        ResolveVarError, SubRenderConfigError, TemplateRenderError, TemplateRenderer,
-        ValueRenderError, ValueRenderer,
+        TemplateRenderer,
     },
 };
 
@@ -299,7 +299,7 @@ impl GlitterProcessor {
         let config_reader = ConfigReader::new();
         let config = config_reader
             .read(&mut input)
-            .context(SubRenderConfigError)?;
+            .context(InvalidSubRenderConfig)?;
 
         Ok(self.subprocessor(filename, directory, config, parameter, source_context))
     }
@@ -342,7 +342,7 @@ impl GlitterProcessor {
         let mut input_reader = BufReader::new(input_file);
         let loaded_vals = ConfigReader::new()
             .load(&mut input_reader)
-            .context(LoadError)?;
+            .context(LoadCommandFailed)?;
 
         Ok(Rc::new(ProcessingContext::local_subcontext(
             directory,
@@ -422,10 +422,9 @@ impl GlitterProcessor {
                                     Rc::clone(&context),
                                 )?;
                                 return Ok(Box::new(SubRender::from(subprocessor)));
-                            }
-                            /*ProcessingInstruction::Select(_) => {
-                                todo!()
-                            }*/
+                            } /*ProcessingInstruction::Select(_) => {
+                                  todo!()
+                              }*/
                         }
                     }
                 }
@@ -434,7 +433,7 @@ impl GlitterProcessor {
             }
         }
 
-        ResolveVarError {
+        FailedResolvingVariable {
             variable_path: current_variable_path,
         }
         .fail()

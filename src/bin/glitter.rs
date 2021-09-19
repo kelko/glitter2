@@ -8,7 +8,7 @@ use std::io::{self, BufRead, BufReader, BufWriter, Write};
 
 use exitcode;
 
-use glitter::process;
+use glitter::{process, report};
 
 fn main() {
     let options = clap_app!(rodata =>
@@ -93,7 +93,7 @@ fn main() {
         starting_directory,
         &mut output_writer,
     ) {
-        eprintln!("{}", error);
+        report(&error);
         std::process::exit(exitcode::SOFTWARE);
     }
 

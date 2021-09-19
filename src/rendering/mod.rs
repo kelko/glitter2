@@ -16,14 +16,16 @@ enum ProcessingStatement {
 
 #[derive(Debug, Snafu)]
 pub enum TemplateRenderError {
-    #[snafu(display("Failed to generate a value for a processing block: {}", source))]
-    ValueGenerationError {
-        source: ValueRenderError,
-        backtrace: Backtrace,
+    #[snafu(display("Failed to generate a value for a processing block"))]
+    ValueRenderingFailed {
+        #[snafu(backtrace)]
+        #[snafu(source(from(ValueRenderError, Box::new)))]
+        source: Box<ValueRenderError>,
     },
-    #[snafu(display("Failed to write rendered text: {}", source))]
+    #[snafu(display("Failed to write rendered text"))]
     OutputWriteError {
-        source: std::io::Error,
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
     #[snafu(display("Empty processing block in template starting at {}", start_at))]
@@ -41,41 +43,60 @@ pub enum TemplateRenderError {
         source_definition: String,
         backtrace: Backtrace,
     },
-    #[snafu(display("Invalid template source file {}: {}", file_name, source))]
+    #[snafu(display("Invalid template source file {}", file_name))]
     InvalidTemplateFile {
         file_name: String,
-        source: std::io::Error,
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
 }
 
 #[derive(Debug, Snafu)]
-#[snafu(visibility = "pub")]
+#[snafu(visibility = "pub(crate)")]
 pub enum ValueRenderError {
-    #[snafu(display("Failed to write rendered text: {}", source))]
-    WriteValueError {
-        source: std::io::Error,
+    #[snafu(display("Failed to write rendered text"))]
+    FailedWritingText {
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
+    #[snafu(display("Failed to read input text from file {}", input_file))]
+    FailedReadingText {
+        input_file: String,
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
+        backtrace: Backtrace,
+    },
+
+    #[snafu(display("Value can't be calculated, only rendered directly"))]
+    InvalidCalculateCall { backtrace: Backtrace },
+    #[snafu(display("Sub-Rendering failed"))]
+    RenderCommandFailed {
+        #[snafu(backtrace)]
+        #[snafu(source(from(TemplateRenderError, Box::new)))]
+        source: Box<TemplateRenderError>,
+    },
+
     #[snafu(display("Failed to process load"))]
-    LoadError {
-        source: ConfigReadError,
-        backtrace: Backtrace,
+    LoadCommandFailed {
+        #[snafu(backtrace)]
+        #[snafu(source(from(ConfigReadError, Box::new)))]
+        source: Box<ConfigReadError>,
     },
-    #[snafu(display("Could not resolve variable path: {}", variable_path))]
-    ResolveVarError {
+
+    #[snafu(display("Failed to resolve variable path: {}", variable_path))]
+    FailedResolvingVariable {
         variable_path: String,
         backtrace: Backtrace,
     },
-    #[snafu(display("Value can't be calculated, only rendered directly"))]
-    InvalidCalculateCall { backtrace: Backtrace },
-    #[snafu(display("Could not load config for Sub-Rendering: {}", source))]
-    SubRenderConfigError {
-        source: crate::config::reader::ConfigReadError,
-        backtrace: Backtrace,
+
+    #[snafu(display("Configuration for Sub-Rendering is invalid",))]
+    InvalidSubRenderConfig {
+        #[snafu(backtrace)]
+        #[snafu(source(from(ConfigReadError, Box::new)))]
+        source: Box<ConfigReadError>,
     },
-    #[snafu(display("Sub-Rendering failed: {}", source))]
-    SubRenderError { source: Box<TemplateRenderError> },
 }
 
 pub trait ValueRenderer {
@@ -114,7 +135,7 @@ impl<'a> TemplateRenderer<'a> {
         }
     }
 
-    pub fn with_config(config: TemplateRendererConfig, output: &'a mut dyn Write) -> Self {
+    pub fn based_upon_config(config: TemplateRendererConfig, output: &'a mut dyn Write) -> Self {
         Self { config, output }
     }
 
@@ -170,7 +191,7 @@ impl<'a> TemplateRenderer<'a> {
                         )?;
                         value_renderer
                             .render_value(&var_path, iteration_count, self)
-                            .context(ValueGenerationError)?;
+                            .context(ValueRenderingFailed)?;
 
                         char_index += 3 + block_length;
                         from = char_index;
@@ -186,7 +207,7 @@ impl<'a> TemplateRenderer<'a> {
                         )?;
                         value_renderer
                             .render_value(&var_path, iteration_count, self)
-                            .context(ValueGenerationError)?;
+                            .context(ValueRenderingFailed)?;
 
                         char_index += 2 + line_length;
                         from = char_index;

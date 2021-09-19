@@ -6,7 +6,10 @@ use std::rc::Rc;
 use crate::{
     config::model::RawValue,
     processing::{GlitterProcessor, ProcessingContext},
-    rendering::{InvalidCalculateCall, TemplateRenderer, ValueRenderError, WriteValueError},
+    rendering::{
+        FailedReadingText, FailedWritingText, InvalidCalculateCall, RenderCommandFailed,
+        TemplateRenderer, ValueRenderError,
+    },
 };
 
 pub(crate) trait RenderableVariable {
@@ -27,13 +30,13 @@ impl From<RawValue> for RenderableRawValue {
 impl RenderableVariable for RenderableRawValue {
     fn render(&self, output: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
         match &self.value {
-            RawValue::Boolean(true) => output.write(b"true").context(WriteValueError)?,
-            RawValue::Boolean(false) => output.write(b"false").context(WriteValueError)?,
+            RawValue::Boolean(true) => output.write(b"true").context(FailedWritingText)?,
+            RawValue::Boolean(false) => output.write(b"false").context(FailedWritingText)?,
             RawValue::Integer(value) => output
                 .write(format!("{}", value).as_bytes())
-                .context(WriteValueError)?,
+                .context(FailedWritingText)?,
             RawValue::Float(value) | RawValue::String(value) => {
-                output.write(value.as_bytes()).context(WriteValueError)?
+                output.write(value.as_bytes()).context(FailedWritingText)?
             }
         };
 
@@ -60,14 +63,21 @@ impl RenderableVariable for RenderableQuote {
     fn render(&self, output: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
         let fullname = self.context.resolve_filename(&self.file);
 
-        let input = File::open(fullname).context(WriteValueError)?;
+        let input = File::open(&fullname).context(FailedReadingText {
+            input_file: fullname.clone(),
+        })?;
         let buffered = BufReader::new(input);
 
         for line in buffered.lines() {
             output
-                .write(line.context(WriteValueError)?.as_bytes())
-                .context(WriteValueError)?;
-            output.write(b"\n").context(WriteValueError)?;
+                .write(
+                    line.context(FailedReadingText {
+                        input_file: fullname.clone(),
+                    })?
+                    .as_bytes(),
+                )
+                .context(FailedWritingText)?;
+            output.write(b"\n").context(FailedWritingText)?;
         }
 
         Ok(())
@@ -76,13 +86,15 @@ impl RenderableVariable for RenderableQuote {
     fn calculate(&self) -> std::result::Result<RawValue, ValueRenderError> {
         let fullname = self.context.resolve_filename(&self.file);
 
-        let input = File::open(fullname).context(WriteValueError)?;
+        let input = File::open(&fullname).context(FailedReadingText {
+            input_file: fullname,
+        })?;
         let mut buffered = BufReader::new(input);
         let mut result = String::new();
 
         buffered
             .read_to_string(&mut result)
-            .context(WriteValueError)?;
+            .context(FailedWritingText)?;
 
         Ok(RawValue::String(result))
     }
@@ -100,12 +112,9 @@ impl From<GlitterProcessor> for SubRender {
 
 impl RenderableVariable for SubRender {
     fn render(&self, renderer: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
-        if let Err(error) = self.processor.render(renderer) {
-            return Err(ValueRenderError::SubRenderError {
-                source: Box::new(error),
-            });
-        }
-
+        self.processor
+            .render(renderer)
+            .context(RenderCommandFailed)?;
         Ok(())
     }
 

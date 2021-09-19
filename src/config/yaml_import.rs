@@ -4,15 +4,22 @@ use std::io::BufRead;
 use yaml_rust::{yaml::Hash, Yaml, YamlLoader};
 
 #[derive(Debug, Snafu)]
-pub enum ImportReadError {
+pub enum YamlImportReadError {
     #[snafu(display("Could not access file"))]
-    FileIOError {
-        source: std::io::Error,
+    FileIoError {
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
     #[snafu(display("Input is not valid YAML"))]
     YamlError {
-        source: yaml_rust::ScanError,
+        #[snafu(source(from(yaml_rust::ScanError, Box::new)))]
+        source: Box<yaml_rust::ScanError>,
+        backtrace: Backtrace,
+    },
+    #[snafu(display("Unsupported Input Type {}", value_type))]
+    InvalidType {
+        value_type: String,
         backtrace: Backtrace,
     },
 }
@@ -27,9 +34,9 @@ impl YamlImporter {
     pub fn read<T: BufRead>(
         &self,
         input: &mut T,
-    ) -> Result<VariableDefinitionBlock, ImportReadError> {
+    ) -> Result<VariableDefinitionBlock, YamlImportReadError> {
         let mut buffer = String::new();
-        input.read_to_string(&mut buffer).context(FileIOError)?;
+        input.read_to_string(&mut buffer).context(FileIoError)?;
 
         let yaml_stream = YamlLoader::load_from_str(&buffer).context(YamlError)?;
         if let Yaml::Hash(yaml_content) = &yaml_stream[0] {
@@ -39,7 +46,10 @@ impl YamlImporter {
         }
     }
 
-    pub fn convert_hash(&self, hash: &Hash) -> Result<VariableDefinitionBlock, ImportReadError> {
+    pub fn convert_hash(
+        &self,
+        hash: &Hash,
+    ) -> Result<VariableDefinitionBlock, YamlImportReadError> {
         let mut result = VariableDefinitionBlock::new();
 
         for hash_key in hash.keys() {
@@ -66,10 +76,32 @@ impl YamlImporter {
                     key_string,
                     ValueDefinition::Value(RawValue::Float(real_as_string.clone())),
                 ),
-                _ => todo!(),
+                Yaml::Array(_) => {
+                    return InvalidType {
+                        value_type: String::from("Array"),
+                    }
+                    .fail()
+                }
+                Yaml::Alias(_) => {
+                    return InvalidType {
+                        value_type: String::from("Alias"),
+                    }
+                    .fail()
+                }
+                Yaml::Null => {
+                    return InvalidType {
+                        value_type: String::from("Null"),
+                    }
+                    .fail()
+                }
+                Yaml::BadValue => {
+                    return InvalidType {
+                        value_type: String::from("BadValue"),
+                    }
+                    .fail()
+                }
             };
         }
-
         Ok(result)
     }
 }
