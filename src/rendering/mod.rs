@@ -53,7 +53,7 @@ pub enum TemplateRenderError {
 }
 
 #[derive(Debug, Snafu)]
-#[snafu(visibility = "pub(crate)")]
+#[snafu(visibility(pub(crate)))]
 pub enum ValueRenderError {
     #[snafu(display("Failed to write rendered text"))]
     FailedWritingText {
@@ -152,7 +152,7 @@ impl<'a> TemplateRenderer<'a> {
 
         for iteration_count in 0..body_iterations {
             self.heavylift_render(&template.body, iteration_count, &context, value_renderer)?;
-            self.output.write(b"\n").context(OutputWriteError)?;
+            self.output.write(b"\n").context(OutputWriteSnafu)?;
         }
 
         if let Some(footer) = &template.footer {
@@ -191,7 +191,7 @@ impl<'a> TemplateRenderer<'a> {
                         )?;
                         value_renderer
                             .render_value(&var_path, iteration_count, self)
-                            .context(ValueRenderingFailed)?;
+                            .context(ValueRenderingFailedSnafu)?;
 
                         char_index += 3 + block_length;
                         from = char_index;
@@ -207,7 +207,7 @@ impl<'a> TemplateRenderer<'a> {
                         )?;
                         value_renderer
                             .render_value(&var_path, iteration_count, self)
-                            .context(ValueRenderingFailed)?;
+                            .context(ValueRenderingFailedSnafu)?;
 
                         char_index += 2 + line_length;
                         from = char_index;
@@ -237,15 +237,16 @@ impl<'a> TemplateRenderer<'a> {
             TemplateValue::RawValue(template) => Ok(template.clone()),
             TemplateValue::Quote(file_path) => {
                 let full_file_path = context.resolve_filename(file_path);
-                let file = std::fs::File::open(full_file_path).context(InvalidTemplateFile {
-                    file_name: file_path,
-                })?;
+                let file =
+                    std::fs::File::open(full_file_path).context(InvalidTemplateFileSnafu {
+                        file_name: file_path,
+                    })?;
 
                 let mut buf_reader = BufReader::new(file);
                 let mut contents = String::new();
                 buf_reader
                     .read_to_string(&mut contents)
-                    .context(InvalidTemplateFile {
+                    .context(InvalidTemplateFileSnafu {
                         file_name: file_path,
                     })?;
 
@@ -273,7 +274,7 @@ impl<'a> TemplateRenderer<'a> {
         if let Some(to) = to_option {
             self.output
                 .write(template[from..=to].as_bytes())
-                .context(OutputWriteError)?;
+                .context(OutputWriteSnafu)?;
         }
 
         Ok(())
@@ -299,12 +300,12 @@ impl<'a> TemplateRenderer<'a> {
         }
 
         if !hit_end {
-            NonTerminatedProcessingBlock {
+            NonTerminatedProcessingBlockSnafu {
                 start_at: start_position,
             }
             .fail()
         } else if end == start_position {
-            EmptyProcessingBlock {
+            EmptyProcessingBlockSnafu {
                 start_at: start_position,
             }
             .fail()
@@ -333,7 +334,7 @@ impl<'a> TemplateRenderer<'a> {
         }
 
         if end == start_position {
-            EmptyProcessingBlock {
+            EmptyProcessingBlockSnafu {
                 start_at: start_position,
             }
             .fail()

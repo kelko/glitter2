@@ -32,12 +32,12 @@ pub fn process<TInput: BufRead, TOutput: Write>(
     output: &mut TOutput,
 ) -> Result<(), GlitterError> {
     let config_reader = ConfigReader::new();
-    let config = config_reader.read(input).context(InvalidConfig)?;
+    let config = config_reader.read(input).context(InvalidConfigSnafu)?;
 
     let processor = GlitterProcessor::new(inputname, starting_directory, config);
     processor
         .run(TemplateRenderer::new(output))
-        .context(RenderingFailed)?;
+        .context(RenderingFailedSnafu)?;
 
     Ok(())
 }

@@ -112,8 +112,8 @@ impl TryFrom<&Yaml> for RawValue {
             Yaml::Boolean(bool_value) => Ok(RawValue::Boolean(bool_value.clone())),
             Yaml::Integer(int_value) => Ok(RawValue::Integer(int_value.clone())),
             Yaml::Real(real_as_string) => Ok(RawValue::Float(real_as_string.clone())),
-            Yaml::Null => EmptyRawValue {}.fail(),
-            _ => UnsupportedRawValueType {}.fail(),
+            Yaml::Null => EmptyRawValueSnafu {}.fail(),
+            _ => UnsupportedRawValueTypeSnafu {}.fail(),
         }
     }
 }
@@ -132,14 +132,14 @@ impl TryFrom<&Yaml> for ValueDefinition {
 
         if !value_declaration.is_null() && !value_declaration.is_badvalue() {
             let raw_value = RawValue::try_from(&var_declaration["value"])
-                .context(InvalidRawValue { yaml_source })?;
+                .context(InvalidRawValueSnafu { yaml_source })?;
             return Ok(ValueDefinition::Value(raw_value));
         }
 
         if let Yaml::Hash(var_hash) = &var_declaration["children"] {
             return Ok(ValueDefinition::Object(
                 ConfigReader::read_var_declarations(var_hash)
-                    .context(InvalidSubDefinition { var_type: "Object" })?,
+                    .context(InvalidSubDefinitionSnafu { var_type: "Object" })?,
             ));
         }
 
@@ -149,9 +149,11 @@ impl TryFrom<&Yaml> for ValueDefinition {
 
         if let Yaml::String(file_path) = &var_declaration["load"] {
             let parameter = if let Yaml::Hash(var_hash) = &var_declaration["parameter"] {
-                ConfigReader::read_var_declarations(var_hash).context(InvalidSubDefinition {
-                    var_type: "Load->Parameter",
-                })?
+                ConfigReader::read_var_declarations(var_hash).context(
+                    InvalidSubDefinitionSnafu {
+                        var_type: "Load->Parameter",
+                    },
+                )?
             } else {
                 VariableDefinitionBlock::new()
             };
@@ -164,9 +166,11 @@ impl TryFrom<&Yaml> for ValueDefinition {
 
         if let Yaml::String(file_path) = &var_declaration["render"] {
             let parameter = if let Yaml::Hash(var_hash) = &var_declaration["parameter"] {
-                ConfigReader::read_var_declarations(var_hash).context(InvalidSubDefinition {
-                    var_type: "Render->Parameter",
-                })?
+                ConfigReader::read_var_declarations(var_hash).context(
+                    InvalidSubDefinitionSnafu {
+                        var_type: "Render->Parameter",
+                    },
+                )?
             } else {
                 VariableDefinitionBlock::new()
             };
@@ -187,7 +191,7 @@ impl TryFrom<&Yaml> for ValueDefinition {
 
         // condition: uff ...
 
-        UnknownValueType { yaml_source }.fail()
+        UnknownValueTypeSnafu { yaml_source }.fail()
     }
 }
 
@@ -209,7 +213,7 @@ impl TryFrom<&Yaml> for TemplateValue {
             yaml_source = String::from("(INVALID YAML)");
         }
 
-        InvalidTemplateSubstructure { yaml_source }.fail()
+        InvalidTemplateSubstructureSnafu { yaml_source }.fail()
     }
 }
 
@@ -222,15 +226,15 @@ impl ConfigReader {
 
     pub fn read<T: BufRead>(&self, input: &mut T) -> Result<GlitterConfig, ConfigReadError> {
         let mut buffer = String::new();
-        input.read_to_string(&mut buffer).context(InputIoError)?;
+        input.read_to_string(&mut buffer).context(InputIoSnafu)?;
 
-        let yaml_stream = YamlLoader::load_from_str(&buffer).context(InvalidYaml)?;
+        let yaml_stream = YamlLoader::load_from_str(&buffer).context(InvalidYamlSnafu)?;
         let yaml_content = &yaml_stream[0];
 
         let global: VariableDefinitionBlock =
             if let Yaml::Hash(global_hash) = &yaml_content["global"] {
                 Self::read_var_declarations(global_hash)
-                    .context(InvalidVarDefinitionBlock { block: "global" })?
+                    .context(InvalidVarDefinitionBlockSnafu { block: "global" })?
             } else {
                 VariableDefinitionBlock::new()
             };
@@ -238,15 +242,15 @@ impl ConfigReader {
         let local: VariableDefinitionBlock = if let Yaml::Hash(local_hash) = &yaml_content["local"]
         {
             Self::read_var_declarations(local_hash)
-                .context(InvalidVarDefinitionBlock { block: "local" })?
+                .context(InvalidVarDefinitionBlockSnafu { block: "local" })?
         } else {
             VariableDefinitionBlock::new()
         };
 
         let injection: Vec<VariableDefinitionBlock> = match &yaml_content["injection"] {
             Yaml::Array(array) => Self::read_injections(array)?,
-            Yaml::Null => return InjectionMissing {}.fail(),
-            _ => return InvalidTypeAtInjection {}.fail(),
+            Yaml::Null => return InjectionMissingSnafu {}.fail(),
+            _ => return InvalidTypeAtInjectionSnafu {}.fail(),
         };
 
         let template = match &yaml_content["template"] {
@@ -254,8 +258,8 @@ impl ConfigReader {
                 TemplateDefinition::simple_template(simple_template.to_owned())
             }
             Yaml::Hash(_) => Self::read_hbf_template(&yaml_content["template"])?,
-            Yaml::Null => return TemplateMissing {}.fail(),
-            _ => InvalidTypeAtTemplate {}.fail()?,
+            Yaml::Null => return TemplateMissingSnafu {}.fail(),
+            _ => InvalidTypeAtTemplateSnafu {}.fail()?,
         };
 
         Ok(GlitterConfig {
@@ -275,10 +279,10 @@ impl ConfigReader {
             if let Yaml::Hash(hash) = single_injection {
                 variable_block_list.push(
                     Self::read_var_declarations(hash)
-                        .context(InvalidVarDefinitionBlock { block: "injection" })?,
+                        .context(InvalidVarDefinitionBlockSnafu { block: "injection" })?,
                 );
             } else {
-                InvalidTypeAtInjection {}.fail()?
+                InvalidTypeAtInjectionSnafu {}.fail()?
             }
         }
 
@@ -294,14 +298,14 @@ impl ConfigReader {
             let key_as_string = if let Yaml::String(string_value) = hash_key {
                 string_value.clone()
             } else {
-                return InvalidTypeAsVarName {
+                return InvalidTypeAsVarNameSnafu {
                     key: String::from(hash_key.as_str().unwrap_or("🤷")),
                 }
                 .fail();
             };
 
             let var_declaration = ValueDefinition::try_from(&var_declaration_block[hash_key])
-                .context(InvalidValueDefinition {
+                .context(InvalidValueDefinitionSnafu {
                     key: key_as_string.clone(),
                 })?;
             variable_block.insert(key_as_string, var_declaration);
@@ -316,7 +320,7 @@ impl ConfigReader {
         } else {
             Some(
                 TemplateValue::try_from(&template["header"])
-                    .context(InvalidTemplateVarDefinition { section: "header" })?,
+                    .context(InvalidTemplateVarDefinitionSnafu { section: "header" })?,
             )
         };
 
@@ -325,12 +329,12 @@ impl ConfigReader {
         } else {
             Some(
                 TemplateValue::try_from(&template["footer"])
-                    .context(InvalidTemplateVarDefinition { section: "footer" })?,
+                    .context(InvalidTemplateVarDefinitionSnafu { section: "footer" })?,
             )
         };
 
         let body = TemplateValue::try_from(&template["body"])
-            .context(InvalidTemplateVarDefinition { section: "body" })?;
+            .context(InvalidTemplateVarDefinitionSnafu { section: "body" })?;
 
         Ok(TemplateDefinition {
             header,
@@ -344,19 +348,19 @@ impl ConfigReader {
         input: &mut T,
     ) -> Result<VariableDefinitionBlock, ConfigReadError> {
         let mut buffer = String::new();
-        input.read_to_string(&mut buffer).context(InputIoError)?;
+        input.read_to_string(&mut buffer).context(InputIoSnafu)?;
 
-        let yaml_stream = YamlLoader::load_from_str(&buffer).context(InvalidYaml)?;
+        let yaml_stream = YamlLoader::load_from_str(&buffer).context(InvalidYamlSnafu)?;
         let yaml_content = &yaml_stream[0];
 
         match yaml_content {
             Yaml::Hash(hash) => Ok(Self::read_var_declarations(hash).context(
-                InvalidVarDefinitionBlock {
+                InvalidVarDefinitionBlockSnafu {
                     block: "Load Source",
                 },
             )?),
-            Yaml::Null => MissingLoadSource {}.fail(),
-            _ => InvalidTypeAtLoadSource {
+            Yaml::Null => MissingLoadSourceSnafu {}.fail(),
+            _ => InvalidTypeAtLoadSourceSnafu {
                 yaml_source: buffer,
             }
             .fail(),

@@ -36,9 +36,9 @@ impl YamlImporter {
         input: &mut T,
     ) -> Result<VariableDefinitionBlock, YamlImportReadError> {
         let mut buffer = String::new();
-        input.read_to_string(&mut buffer).context(FileIoError)?;
+        input.read_to_string(&mut buffer).context(FileIoSnafu)?;
 
-        let yaml_stream = YamlLoader::load_from_str(&buffer).context(YamlError)?;
+        let yaml_stream = YamlLoader::load_from_str(&buffer).context(YamlSnafu)?;
         if let Yaml::Hash(yaml_content) = &yaml_stream[0] {
             self.convert_hash(yaml_content)
         } else {
@@ -77,25 +77,25 @@ impl YamlImporter {
                     ValueDefinition::Value(RawValue::Float(real_as_string.clone())),
                 ),
                 Yaml::Array(_) => {
-                    return InvalidType {
+                    return InvalidTypeSnafu {
                         value_type: String::from("Array"),
                     }
                     .fail()
                 }
                 Yaml::Alias(_) => {
-                    return InvalidType {
+                    return InvalidTypeSnafu {
                         value_type: String::from("Alias"),
                     }
                     .fail()
                 }
                 Yaml::Null => {
-                    return InvalidType {
+                    return InvalidTypeSnafu {
                         value_type: String::from("Null"),
                     }
                     .fail()
                 }
                 Yaml::BadValue => {
-                    return InvalidType {
+                    return InvalidTypeSnafu {
                         value_type: String::from("BadValue"),
                     }
                     .fail()
