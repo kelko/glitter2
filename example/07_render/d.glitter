@@ -1,12 +1,14 @@
+global:
+  globalVal:
+    value: "Set in d.glitter"
+
 injection:
   - rendered:
       render: "b.glitter"
 
 #Result:
-#> global ignored
-#> not passed hello
-#> global ignored
-#> passed hello
+#> The value of `globalVal` is: Set in d.glitter
+#> The value of `globalVal` is: Set in d.glitter
 
 template: |
   *> rendered
