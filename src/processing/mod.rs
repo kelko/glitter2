@@ -22,8 +22,8 @@ use crate::{
     },
     processing::var_store::{ProcessingInstruction, StoredVariable, VariableStore},
     rendering::{
+        template_rendering::TemplateRenderer,
         var_rendering::{RenderableQuote, RenderableRawValue, RenderableVariable, SubRender},
-        TemplateRenderer,
     },
 };
 

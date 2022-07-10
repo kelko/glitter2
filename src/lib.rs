@@ -6,7 +6,7 @@ use snafu::{ResultExt, Snafu};
 
 use crate::config::reader::ConfigReader;
 use crate::processing::GlitterProcessor;
-use crate::rendering::TemplateRenderer;
+use crate::rendering::template_rendering::TemplateRenderer;
 
 pub mod config;
 pub mod processing;
