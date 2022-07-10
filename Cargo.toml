@@ -8,6 +8,6 @@ edition = "2021"
 
 [dependencies]
 snafu = "0.7"
-clap = "2.34.0"
+clap = "3.2"
 yaml-rust = "0.4"
 exitcode = "1.1.2"

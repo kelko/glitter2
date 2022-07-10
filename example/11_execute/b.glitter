@@ -1,0 +1,13 @@
+injection:
+  - val1:
+      execute: /usr/bin/uname
+      arguments:
+        - value: -a
+
+#Result:
+# your current user name. Works on un*x only
+# e.g. for M1 iMac:
+# Darwin XXXX 21.5.0 Darwin Kernel Version 21.5.0: YYYYYYYYYYYYYY; root:ZZZZZZZZZZZZZ/ZZZZZZZZZ arm64
+
+template: |-
+  *{val1}

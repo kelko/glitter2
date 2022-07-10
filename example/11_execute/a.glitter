@@ -1,0 +1,9 @@
+injection:
+  - val1:
+      execute: /usr/bin/whoami
+
+#Result:
+# your current user name. Works on un*x only
+
+template: |-
+  *{val1}

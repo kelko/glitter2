@@ -1,24 +1,82 @@
 use std::rc::Rc;
 
-use crate::config::model::RawValue;
-use crate::processing::{split_value_path, ProcessingContext, VariableDefinitionBlock};
-
 use crate::config::model::ValueDefinition;
+use crate::config::model::{RawValue, ValueDefinitionList};
+use crate::processing::{ProcessingContext, ValuePath, VariableDefinitionBlock};
 
 pub(crate) enum ProcessingInstruction {
     Load(String, VariableDefinitionBlock),
     Render(String, VariableDefinitionBlock),
-    //Execute(ImportStatement), //execute a binary file and return the stdout
-    Import(String), //import a YAML file and return the content
+    //execute a binary file and return the stdout:
+    Execute(String, ValueDefinitionList),
+    //import a YAML file and return the content:
+    Import(String),
     Quote(String),
-    //Select(Vec<CaseClause>),
+    //TODO: Select(Vec<CaseClause>),
 }
 
 pub(crate) enum StoredVariable {
     Value(RawValue),
-    Instruction(ProcessingInstruction, Vec<String>),
-    LocalReference(Vec<String>),
-    DistantReference(Vec<String>, Rc<ProcessingContext>),
+    Instruction(ProcessingInstruction, ValuePath),
+    LocalReference(ValuePath),
+    DistantReference(ValuePath, Rc<ProcessingContext>),
+    Missing,
+}
+
+impl StoredVariable {
+    fn out_of_block(block: &VariableDefinitionBlock, key_path: &mut ValuePath) -> Self {
+        if key_path.is_empty() {
+            return Self::Missing;
+        }
+        let key = key_path.take_first();
+
+        if let Some(value_definition) = block.get(&key) {
+            Self::from(value_definition, key_path)
+        } else {
+            Self::Missing
+        }
+    }
+
+    pub(crate) fn from(definition: &ValueDefinition, key_path: &mut ValuePath) -> Self {
+        return match definition {
+            ValueDefinition::Value(value) => StoredVariable::Value(value.clone()),
+            ValueDefinition::Object(map) => StoredVariable::out_of_block(map, key_path),
+            ValueDefinition::Variable(value_path) => {
+                let mut path_parts = ValuePath::from(value_path);
+                path_parts.append(key_path);
+                StoredVariable::LocalReference(path_parts)
+            }
+            ValueDefinition::Quote(file_path) => StoredVariable::Instruction(
+                ProcessingInstruction::Quote(file_path.clone()),
+                key_path.clone(),
+            ),
+            ValueDefinition::Import(file_path) => StoredVariable::Instruction(
+                ProcessingInstruction::Import(file_path.clone()),
+                key_path.clone(),
+            ),
+            ValueDefinition::Load(load_statement) => StoredVariable::Instruction(
+                ProcessingInstruction::Load(
+                    load_statement.file.clone(),
+                    load_statement.parameter.clone(),
+                ),
+                key_path.clone(),
+            ),
+            ValueDefinition::Render(load_statement) => StoredVariable::Instruction(
+                ProcessingInstruction::Render(
+                    load_statement.file.clone(),
+                    load_statement.parameter.clone(),
+                ),
+                key_path.clone(),
+            ),
+            ValueDefinition::Execute(execute_statement) => StoredVariable::Instruction(
+                ProcessingInstruction::Execute(
+                    execute_statement.executable.clone(),
+                    execute_statement.arguments.clone(),
+                ),
+                key_path.clone(),
+            ),
+        };
+    }
 }
 
 pub struct VariableStore {
@@ -45,77 +103,26 @@ impl VariableStore {
             || (self.source_context.is_some() && self.parameter.get(key).is_some())
     }
 
-    pub(crate) fn resolve(&self, key_path: Vec<String>) -> Result<StoredVariable, ()> {
-        if let Some(var) = Self::resolve_in_map(&self.inner_store, key_path.clone()) {
-            return Ok(var);
+    pub(crate) fn resolve(&self, key_path: &mut ValuePath) -> StoredVariable {
+        match StoredVariable::out_of_block(&self.inner_store, key_path) {
+            StoredVariable::Missing => (),
+            v => return v,
         }
 
         if let Some(source_context) = &self.source_context {
-            match Self::resolve_in_map(&self.parameter, key_path) {
-                None => (),
-                Some(StoredVariable::LocalReference(path_parts)) => {
-                    return Ok(StoredVariable::DistantReference(
-                        path_parts,
-                        Rc::clone(source_context),
-                    ))
+            match StoredVariable::out_of_block(&self.parameter, key_path) {
+                StoredVariable::Missing => (),
+                StoredVariable::LocalReference(path_parts) => {
+                    return StoredVariable::DistantReference(path_parts, Rc::clone(source_context))
                 }
-                Some(v) => return Ok(v),
+                v => return v,
             };
         }
 
-        Err(())
+        StoredVariable::Missing
     }
 
-    fn resolve_in_map(
-        map: &VariableDefinitionBlock,
-        mut key_path: Vec<String>,
-    ) -> Option<StoredVariable> {
-        if key_path.len() < 1 {
-            return None;
-        }
-        let key = key_path.remove(0);
-
-        match map.get(&key) {
-            Some(ValueDefinition::Value(value)) => Some(StoredVariable::Value(value.clone())),
-            Some(ValueDefinition::Object(map)) => Self::resolve_in_map(map, key_path),
-            Some(ValueDefinition::Variable(value_path)) => {
-                let path_parts = Self::new_value_path(split_value_path(value_path), key_path);
-
-                Some(StoredVariable::LocalReference(path_parts))
-            }
-            Some(ValueDefinition::Quote(file_path)) => Some(StoredVariable::Instruction(
-                ProcessingInstruction::Quote(file_path.clone()),
-                key_path,
-            )),
-            Some(ValueDefinition::Import(file_path)) => Some(StoredVariable::Instruction(
-                ProcessingInstruction::Import(file_path.clone()),
-                key_path,
-            )),
-            Some(ValueDefinition::Load(load_statement)) => Some(StoredVariable::Instruction(
-                ProcessingInstruction::Load(
-                    load_statement.file.clone(),
-                    load_statement.parameter.clone(),
-                ),
-                key_path,
-            )),
-            Some(ValueDefinition::Render(load_statement)) => Some(StoredVariable::Instruction(
-                ProcessingInstruction::Render(
-                    load_statement.file.clone(),
-                    load_statement.parameter.clone(),
-                ),
-                key_path,
-            )),
-            Some(ValueDefinition::Select(_)) => todo!(),
-            None => None,
-        }
-    }
-
-    fn new_value_path(mut start: Vec<String>, mut rest: Vec<String>) -> Vec<String> {
-        start.append(&mut rest);
-
-        return start;
-    }
-
+    #[inline(always)]
     pub(crate) fn insert<T: Into<String>>(mut self, key: T, value: ValueDefinition) -> Self {
         self.inner_store.insert(key.into(), value);
 

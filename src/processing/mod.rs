@@ -1,15 +1,16 @@
-mod var_store;
-
 use std::fs::File;
 use std::io::BufReader;
+use std::ops::Index;
 use std::path::Path;
 use std::rc::Rc;
 
 use snafu::ResultExt;
 
+use crate::rendering::var_rendering::RenderableExecutionResult;
 use crate::rendering::{
-    FailedResolvingVariableSnafu, InvalidSubRenderConfigSnafu, LoadCommandFailedSnafu,
-    TemplateRenderError, ValueRenderError, ValueRenderer,
+    FailedAccessingFilesystemSnafu, FailedReadingTextSnafu, FailedResolvingVariableSnafu,
+    InvalidSubRenderConfigSnafu, LoadCommandFailedSnafu, TemplateRenderError, ValueRenderError,
+    ValueRenderer,
 };
 use crate::{
     config::{
@@ -25,6 +26,15 @@ use crate::{
         TemplateRenderer,
     },
 };
+
+mod var_store;
+
+enum NextVarProcessingInstruction {
+    ContinueElsewhere(Option<Rc<ProcessingContext>>, ValuePath, RequestSource),
+    ReturnValue(Box<dyn RenderableVariable>),
+    ThrowError(ValueRenderError),
+    ReportMissing,
+}
 
 pub(crate) struct ProcessingContext {
     pub(crate) directory: String,
@@ -240,19 +250,19 @@ impl GlitterProcessor {
 
     fn read_variable(
         storages: &[(Rc<VariableStore>, RequestSource)],
-        variable_path: Vec<String>,
-    ) -> Option<(StoredVariable, RequestSource)> {
+        variable_path: &mut ValuePath,
+    ) -> (StoredVariable, RequestSource) {
         let first_key = &variable_path[0];
         for (single_storage, next_request_source) in storages {
             if single_storage.contains(first_key) {
-                return Some((
-                    single_storage.resolve(variable_path).ok()?,
+                return (
+                    single_storage.resolve(variable_path),
                     next_request_source.clone(),
-                ));
+                );
             }
         }
 
-        None
+        (StoredVariable::Missing, RequestSource::Global)
     }
 
     fn storages_for(
@@ -286,12 +296,12 @@ impl GlitterProcessor {
         let filename = if let Some(name) = path.file_name() {
             name.to_str().unwrap().to_owned()
         } else {
-            todo!()
+            return FailedAccessingFilesystemSnafu {}.fail();
         };
         let directory = if let Some(dir) = path.parent() {
             dir.to_str().unwrap().to_owned()
         } else {
-            todo!()
+            return FailedAccessingFilesystemSnafu {}.fail();
         };
 
         let mut input =
@@ -309,11 +319,7 @@ impl GlitterProcessor {
         full_file_path: String,
     ) -> Result<Rc<ProcessingContext>, ValueRenderError> {
         let path = std::path::Path::new(&full_file_path);
-        let directory = if let Some(dir) = path.parent() {
-            dir.to_str().unwrap().to_owned()
-        } else {
-            todo!()
-        };
+        let directory = Self::extract_parent_directory(path)?;
 
         let input_file = File::open(full_file_path).expect("Could not open input file");
         let mut input_reader = BufReader::new(input_file);
@@ -332,13 +338,11 @@ impl GlitterProcessor {
         source_context: Rc<ProcessingContext>,
     ) -> Result<Rc<ProcessingContext>, ValueRenderError> {
         let path = std::path::Path::new(&full_file_path);
-        let directory = if let Some(dir) = path.parent() {
-            dir.to_str().unwrap().to_owned()
-        } else {
-            todo!()
-        };
+        let directory = Self::extract_parent_directory(path)?;
 
-        let input_file = File::open(full_file_path).expect("Could not open input file");
+        let input_file = File::open(&full_file_path).context(FailedReadingTextSnafu {
+            input_file: full_file_path,
+        })?;
         let mut input_reader = BufReader::new(input_file);
         let loaded_vals = ConfigReader::new()
             .load(&mut input_reader)
@@ -352,91 +356,182 @@ impl GlitterProcessor {
         )))
     }
 
+    fn extract_parent_directory(path: &Path) -> Result<String, ValueRenderError> {
+        if let Some(dir) = path.parent() {
+            Ok(dir.to_str().unwrap().to_owned())
+        } else {
+            return FailedAccessingFilesystemSnafu {}.fail();
+        }
+    }
+
+    fn convert_definition(
+        &self,
+        definition: ValueDefinition,
+        context: Rc<ProcessingContext>,
+        request_source: RequestSource,
+    ) -> Result<Box<dyn RenderableVariable>, ValueRenderError> {
+        let mut empty_path = ValuePath(vec![]);
+        let var = StoredVariable::from(&definition, &mut empty_path);
+
+        match self.process_variable(var, &context, &request_source) {
+            NextVarProcessingInstruction::ReportMissing => {
+                panic!("Can't be happening. There is no var name, so it can't be not resolved")
+            }
+            NextVarProcessingInstruction::ReturnValue(value) => Ok(value),
+            NextVarProcessingInstruction::ThrowError(e) => Err(e),
+            NextVarProcessingInstruction::ContinueElsewhere(
+                _,
+                new_variable_path,
+                new_request_source,
+            ) => return self.resolve_var(new_variable_path, new_request_source),
+        }
+    }
+
+    fn process_variable(
+        &self,
+        variable: StoredVariable,
+        context: &Rc<ProcessingContext>,
+        request_source: &RequestSource,
+    ) -> NextVarProcessingInstruction {
+        return match variable {
+            StoredVariable::Missing => NextVarProcessingInstruction::ReportMissing,
+            StoredVariable::Value(actual_value) => NextVarProcessingInstruction::ReturnValue(
+                Box::new(RenderableRawValue::from(actual_value)),
+            ),
+            StoredVariable::LocalReference(new_path) => {
+                NextVarProcessingInstruction::ContinueElsewhere(
+                    None,
+                    new_path,
+                    request_source.clone(),
+                )
+            }
+            StoredVariable::DistantReference(new_path, new_context) => {
+                NextVarProcessingInstruction::ContinueElsewhere(
+                    Some(new_context),
+                    new_path,
+                    request_source.clone(),
+                )
+            }
+            StoredVariable::Instruction(instruction, new_path) => match instruction {
+                ProcessingInstruction::Quote(file) => NextVarProcessingInstruction::ReturnValue(
+                    Box::new(RenderableQuote::from(file, Rc::clone(context))),
+                ),
+                ProcessingInstruction::Import(file) => {
+                    match self.import_yaml(self.resolve_filename(&file, &request_source, context)) {
+                        Ok(context) => NextVarProcessingInstruction::ContinueElsewhere(
+                            Some(context),
+                            new_path,
+                            RequestSource::CallingContext,
+                        ),
+                        Err(e) => NextVarProcessingInstruction::ThrowError(e),
+                    }
+                }
+                ProcessingInstruction::Load(file, parameter) => {
+                    match self.load(
+                        self.resolve_filename(&file, &request_source, context),
+                        parameter,
+                        Rc::clone(context),
+                    ) {
+                        Ok(context) => NextVarProcessingInstruction::ContinueElsewhere(
+                            Some(context),
+                            new_path,
+                            RequestSource::CallingContext,
+                        ),
+                        Err(e) => NextVarProcessingInstruction::ThrowError(e),
+                    }
+                }
+                ProcessingInstruction::Render(file, parameter) => {
+                    match self.sub_processor_for(
+                        self.resolve_filename(&file, &request_source, context),
+                        parameter,
+                        Rc::clone(context),
+                    ) {
+                        Ok(subprocessor) => NextVarProcessingInstruction::ReturnValue(Box::new(
+                            SubRender::from(subprocessor),
+                        )),
+                        Err(e) => NextVarProcessingInstruction::ThrowError(e),
+                    }
+                }
+                ProcessingInstruction::Execute(executable, arguments) => {
+                    let mut has_error = false;
+                    let rendered_values = arguments
+                        .into_iter()
+                        .map(|arg| {
+                            match self.convert_definition(
+                                arg,
+                                Rc::clone(context),
+                                request_source.clone(),
+                            ) {
+                                Ok(renderable) => renderable.calculate(),
+                                Err(e) => {
+                                    has_error = true;
+                                    Err(e)
+                                }
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    if has_error {
+                        let error = rendered_values
+                            .into_iter()
+                            .find(|v| v.is_err())
+                            .unwrap()
+                            .unwrap_err();
+                        return NextVarProcessingInstruction::ThrowError(error);
+                    }
+
+                    let rendered_argument_list = rendered_values
+                        .into_iter()
+                        .map(|v| v.unwrap())
+                        .collect::<Vec<_>>();
+                    NextVarProcessingInstruction::ReturnValue(Box::new(
+                        RenderableExecutionResult::from(
+                            executable,
+                            rendered_argument_list,
+                            Rc::clone(context),
+                        ),
+                    ))
+                }
+            },
+        };
+    }
+
     fn resolve_var(
         &self,
-        mut variable_path: Vec<String>,
+        mut variable_path: ValuePath,
         mut request_source: RequestSource,
     ) -> Result<Box<dyn RenderableVariable>, ValueRenderError> {
         let mut context = Rc::clone(&self.root);
         let mut storages;
-        let mut current_variable_path;
+        let mut current_variable_path: String;
 
         loop {
-            current_variable_path = build_value_path(&variable_path);
+            current_variable_path = variable_path.render();
             storages = Self::storages_for(&self.global, &context, &request_source);
 
-            if let Some((result, next_request_source)) =
-                Self::read_variable(&storages, variable_path)
-            {
-                match result {
-                    StoredVariable::Value(actual_value) => {
-                        return Ok(Box::new(RenderableRawValue::from(actual_value)))
-                    }
-                    StoredVariable::LocalReference(new_path) => {
-                        variable_path = new_path;
-                        request_source = next_request_source;
-
-                        continue;
-                    }
-                    StoredVariable::DistantReference(new_path, new_context) => {
-                        variable_path = new_path;
-                        context = new_context;
-                        request_source = next_request_source;
-
-                        continue;
-                    }
-                    StoredVariable::Instruction(instruction, new_path) => {
-                        match instruction {
-                            ProcessingInstruction::Quote(file) => {
-                                return Ok(Box::new(RenderableQuote::from(
-                                    file,
-                                    Rc::clone(&context),
-                                )))
-                            }
-                            ProcessingInstruction::Import(file) => {
-                                variable_path = new_path;
-                                request_source = RequestSource::CallingContext;
-                                context = self.import_yaml(self.resolve_filename(
-                                    &file,
-                                    &next_request_source,
-                                    &context,
-                                ))?;
-
-                                continue;
-                            }
-                            ProcessingInstruction::Load(file, parameter) => {
-                                variable_path = new_path;
-                                request_source = RequestSource::CallingContext;
-                                context = self.load(
-                                    self.resolve_filename(&file, &next_request_source, &context),
-                                    parameter,
-                                    Rc::clone(&context),
-                                )?;
-
-                                continue;
-                            }
-                            ProcessingInstruction::Render(file, parameter) => {
-                                let subprocessor = self.sub_processor_for(
-                                    self.resolve_filename(&file, &next_request_source, &context),
-                                    parameter,
-                                    Rc::clone(&context),
-                                )?;
-                                return Ok(Box::new(SubRender::from(subprocessor)));
-                            } /*ProcessingInstruction::Select(_) => {
-                                  todo!()
-                              }*/
-                        }
-                    }
+            let (result, next_request_source) = Self::read_variable(&storages, &mut variable_path);
+            return match self.process_variable(result, &context, &next_request_source) {
+                NextVarProcessingInstruction::ReportMissing => FailedResolvingVariableSnafu {
+                    variable_path: current_variable_path,
                 }
-            } else {
-                break;
-            }
-        }
+                .fail(),
+                NextVarProcessingInstruction::ReturnValue(value) => Ok(value),
+                NextVarProcessingInstruction::ThrowError(e) => Err(e),
+                NextVarProcessingInstruction::ContinueElsewhere(
+                    new_context_option,
+                    new_variable_path,
+                    new_request_source,
+                ) => {
+                    if let Some(new_context) = new_context_option {
+                        context = new_context;
+                    }
+                    variable_path = new_variable_path;
+                    request_source = new_request_source;
 
-        FailedResolvingVariableSnafu {
-            variable_path: current_variable_path,
+                    continue;
+                }
+            };
         }
-        .fail()
     }
 
     fn resolve_filename(
@@ -460,10 +555,12 @@ impl ValueRenderer for GlitterProcessor {
         iteration_count: usize,
         output: &mut TemplateRenderer,
     ) -> Result<(), ValueRenderError> {
-        let vp = variable_path
-            .split(|c| c == '.')
-            .map(|s| s.to_owned())
-            .collect::<Vec<_>>();
+        let vp = ValuePath(
+            variable_path
+                .split(|c| c == '.')
+                .map(|s| s.to_owned())
+                .collect::<Vec<_>>(),
+        );
         let value = self.resolve_var(vp, RequestSource::Template(iteration_count))?;
         value.render(output)?;
 
@@ -471,14 +568,48 @@ impl ValueRenderer for GlitterProcessor {
     }
 }
 
-pub(crate) fn split_value_path(value_path: &str) -> Vec<String> {
-    value_path
-        .split(".")
-        .into_iter()
-        .map(|s| s.to_owned())
-        .collect::<Vec<String>>()
+#[derive(Clone, Debug)]
+pub(crate) struct ValuePath(Vec<String>);
+
+impl ValuePath {
+    #[inline(always)]
+    fn append(&mut self, other: &mut ValuePath) {
+        self.0.append(&mut other.0)
+    }
+
+    #[inline(always)]
+    pub(crate) fn is_empty(&self) -> bool {
+        return self.0.is_empty();
+    }
+
+    #[inline(always)]
+    pub(crate) fn take_first(&mut self) -> String {
+        self.0.remove(0)
+    }
+
+    #[inline(always)]
+    fn render(&self) -> String {
+        self.0.join(".")
+    }
 }
 
-pub(crate) fn build_value_path(path_elements: &Vec<String>) -> String {
-    path_elements.join(".")
+impl Index<usize> for ValuePath {
+    type Output = String;
+
+    #[inline(always)]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl From<&String> for ValuePath {
+    #[inline(always)]
+    fn from(path: &String) -> Self {
+        ValuePath(
+            path.split(".")
+                .into_iter()
+                .map(|s| s.to_owned())
+                .collect::<Vec<_>>(),
+        )
+    }
 }

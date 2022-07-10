@@ -1,14 +1,17 @@
-use snafu::ResultExt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
+use std::process::Command;
 use std::rc::Rc;
+
+use snafu::ResultExt;
 
 use crate::{
     config::model::RawValue,
     processing::{GlitterProcessor, ProcessingContext},
     rendering::{
-        FailedReadingTextSnafu, FailedWritingTextSnafu, InvalidCalculateCallSnafu,
-        RenderCommandFailedSnafu, TemplateRenderer, ValueRenderError,
+        ExecuteCommandFailedSnafu, ExecuteResultInvalidSnafu, FailedReadingTextSnafu,
+        FailedWritingTextSnafu, InvalidCalculateCallSnafu, RenderCommandFailedSnafu,
+        TemplateRenderer, ValueRenderError,
     },
 };
 
@@ -28,7 +31,7 @@ impl From<RawValue> for RenderableRawValue {
 }
 
 impl RenderableVariable for RenderableRawValue {
-    fn render(&self, output: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
+    fn render(&self, output: &mut TemplateRenderer) -> Result<(), ValueRenderError> {
         match &self.value {
             RawValue::Boolean(true) => output.write(b"true").context(FailedWritingTextSnafu)?,
             RawValue::Boolean(false) => output.write(b"false").context(FailedWritingTextSnafu)?,
@@ -43,7 +46,7 @@ impl RenderableVariable for RenderableRawValue {
         Ok(())
     }
 
-    fn calculate(&self) -> std::result::Result<RawValue, ValueRenderError> {
+    fn calculate(&self) -> Result<RawValue, ValueRenderError> {
         Ok(self.value.clone())
     }
 }
@@ -60,7 +63,7 @@ impl RenderableQuote {
 }
 
 impl RenderableVariable for RenderableQuote {
-    fn render(&self, output: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
+    fn render(&self, output: &mut TemplateRenderer) -> Result<(), ValueRenderError> {
         let fullname = self.context.resolve_filename(&self.file);
 
         let input = File::open(&fullname).context(FailedReadingTextSnafu {
@@ -83,7 +86,7 @@ impl RenderableVariable for RenderableQuote {
         Ok(())
     }
 
-    fn calculate(&self) -> std::result::Result<RawValue, ValueRenderError> {
+    fn calculate(&self) -> Result<RawValue, ValueRenderError> {
         let fullname = self.context.resolve_filename(&self.file);
 
         let input = File::open(&fullname).context(FailedReadingTextSnafu {
@@ -97,6 +100,58 @@ impl RenderableVariable for RenderableQuote {
             .context(FailedWritingTextSnafu)?;
 
         Ok(RawValue::String(result))
+    }
+}
+
+pub(crate) struct RenderableExecutionResult {
+    executable: String,
+    arguments: Vec<RawValue>,
+    context: Rc<ProcessingContext>,
+}
+
+impl RenderableExecutionResult {
+    pub(crate) fn from(
+        executable: String,
+        arguments: Vec<RawValue>,
+        context: Rc<ProcessingContext>,
+    ) -> Self {
+        RenderableExecutionResult {
+            executable,
+            arguments,
+            context,
+        }
+    }
+}
+
+impl RenderableVariable for RenderableExecutionResult {
+    fn render(&self, output: &mut TemplateRenderer) -> std::result::Result<(), ValueRenderError> {
+        if let RawValue::String(content) = self.calculate()? {
+            output
+                .write(content.as_bytes())
+                .context(FailedWritingTextSnafu)?;
+
+            Ok(())
+        } else {
+            panic!("Execution Result needs to be a string")
+        }
+    }
+
+    fn calculate(&self) -> Result<RawValue, ValueRenderError> {
+        let fullname = self.context.resolve_filename(&self.executable);
+        let result = Command::new(fullname)
+            .args(
+                self.arguments
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>(),
+            )
+            .output()
+            .context(ExecuteCommandFailedSnafu)?
+            .stdout;
+
+        Ok(RawValue::String(
+            String::from_utf8(result).context(ExecuteResultInvalidSnafu)?,
+        ))
     }
 }
 

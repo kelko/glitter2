@@ -2,11 +2,12 @@ use std::convert::TryFrom;
 use std::io::BufRead;
 
 use snafu::{Backtrace, ResultExt, Snafu};
+use yaml_rust::yaml::Array;
 use yaml_rust::{yaml::Hash, Yaml, YamlLoader};
 
 use crate::config::model::{
-    GlitterConfig, LoadStatement, RawValue, RenderStatement, TemplateDefinition, TemplateValue,
-    ValueDefinition, VariableDefinitionBlock,
+    ExecuteStatement, GlitterConfig, LoadStatement, RawValue, RenderStatement, TemplateDefinition,
+    TemplateValue, ValueDefinition, ValueDefinitionList, VariableDefinitionBlock,
 };
 
 #[derive(Debug, Snafu)]
@@ -181,6 +182,21 @@ impl TryFrom<&Yaml> for ValueDefinition {
             }));
         }
 
+        if let Yaml::String(executable) = &var_declaration["execute"] {
+            let arguments = if let Yaml::Array(value_list) = &var_declaration["arguments"] {
+                ConfigReader::read_value_list(value_list).context(InvalidSubDefinitionSnafu {
+                    var_type: "Execute->Arguments",
+                })?
+            } else {
+                ValueDefinitionList::new()
+            };
+
+            return Ok(ValueDefinition::Execute(ExecuteStatement {
+                executable: executable.clone(),
+                arguments,
+            }));
+        }
+
         if let Yaml::String(file_path) = &var_declaration["quote"] {
             return Ok(ValueDefinition::Quote(file_path.clone()));
         }
@@ -189,7 +205,7 @@ impl TryFrom<&Yaml> for ValueDefinition {
             return Ok(ValueDefinition::Import(file_path.clone()));
         }
 
-        // condition: uff ...
+        // TODO: Select & Execute
 
         UnknownValueTypeSnafu { yaml_source }.fail()
     }
@@ -287,6 +303,25 @@ impl ConfigReader {
         }
 
         Ok(variable_block_list)
+    }
+
+    pub(crate) fn read_value_list(
+        value_declaration_list: &Array,
+    ) -> Result<ValueDefinitionList, ConfigReadError> {
+        let mut index = -1;
+        let mut value_list = vec![];
+
+        for value_declaration in value_declaration_list {
+            index += 1;
+
+            value_list.push(ValueDefinition::try_from(value_declaration).context(
+                InvalidValueDefinitionSnafu {
+                    key: format!("[{}]", index),
+                },
+            )?);
+        }
+
+        Ok(value_list)
     }
 
     pub(crate) fn read_var_declarations(

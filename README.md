@@ -29,7 +29,7 @@ The global, local and injection parts are similar to each other - as all of them
 
 The `template` block can either be one string, which then is processed as often as there are injections. Alternatively you can define a `header`, `body` and `footer` which can all either be direct `value` definitions or file `quote`s.
 
-The value replacement searches for either `*{x}` constructs, which then applies the value of variable `x` in that place - or via `*>` the rest of the file is taken as variable name and replaced accordingly.
+The value replacement searches for either `*{x}` constructs, which then applies the value of variable `x` in that place - or via `*>` the rest of the line is taken as variable name and replaced accordingly.
 
 
 ### Lazy Evaluation

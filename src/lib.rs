@@ -1,15 +1,16 @@
 extern crate yaml_rust;
 
-pub mod config;
-pub mod processing;
-pub mod rendering;
+use std::io::{BufRead, Write};
 
 use snafu::{ResultExt, Snafu};
-use std::io::{BufRead, Write};
 
 use crate::config::reader::ConfigReader;
 use crate::processing::GlitterProcessor;
 use crate::rendering::TemplateRenderer;
+
+pub mod config;
+pub mod processing;
+pub mod rendering;
 
 #[derive(Debug, Snafu)]
 pub enum GlitterError {

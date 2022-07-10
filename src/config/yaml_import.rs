@@ -1,7 +1,9 @@
-use crate::config::model::{RawValue, ValueDefinition, VariableDefinitionBlock};
-use snafu::{Backtrace, ResultExt, Snafu};
 use std::io::BufRead;
+
+use snafu::{Backtrace, ResultExt, Snafu};
 use yaml_rust::{yaml::Hash, Yaml, YamlLoader};
+
+use crate::config::model::{RawValue, ValueDefinition, VariableDefinitionBlock};
 
 #[derive(Debug, Snafu)]
 pub enum YamlImportReadError {
@@ -17,6 +19,8 @@ pub enum YamlImportReadError {
         source: Box<yaml_rust::ScanError>,
         backtrace: Backtrace,
     },
+    #[snafu(display("Incorrect YAML structure"))]
+    IncorrectYaml { backtrace: Backtrace },
     #[snafu(display("Unsupported Input Type {}", value_type))]
     InvalidType {
         value_type: String,
@@ -42,7 +46,7 @@ impl YamlImporter {
         if let Yaml::Hash(yaml_content) = &yaml_stream[0] {
             self.convert_hash(yaml_content)
         } else {
-            todo!()
+            IncorrectYamlSnafu {}.fail()
         }
     }
 
@@ -80,25 +84,25 @@ impl YamlImporter {
                     return InvalidTypeSnafu {
                         value_type: String::from("Array"),
                     }
-                    .fail()
+                    .fail();
                 }
                 Yaml::Alias(_) => {
                     return InvalidTypeSnafu {
                         value_type: String::from("Alias"),
                     }
-                    .fail()
+                    .fail();
                 }
                 Yaml::Null => {
                     return InvalidTypeSnafu {
                         value_type: String::from("Null"),
                     }
-                    .fail()
+                    .fail();
                 }
                 Yaml::BadValue => {
                     return InvalidTypeSnafu {
                         value_type: String::from("BadValue"),
                     }
-                    .fail()
+                    .fail();
                 }
             };
         }

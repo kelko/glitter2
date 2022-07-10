@@ -1,12 +1,14 @@
-pub(crate) mod var_rendering;
-
-use snafu::{Backtrace, ResultExt, Snafu};
 use std::io::{BufReader, Read, Write};
 use std::rc::Rc;
+use std::string::FromUtf8Error;
+
+use snafu::{Backtrace, ResultExt, Snafu};
 
 use crate::config::model::{TemplateDefinition, TemplateValue};
 use crate::config::reader::ConfigReadError;
 use crate::processing::ProcessingContext;
+
+pub(crate) mod var_rendering;
 
 enum ProcessingStatement {
     Block,
@@ -61,6 +63,7 @@ pub enum ValueRenderError {
         source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
+
     #[snafu(display("Failed to read input text from file {}", input_file))]
     FailedReadingText {
         input_file: String,
@@ -68,9 +71,9 @@ pub enum ValueRenderError {
         source: Box<std::io::Error>,
         backtrace: Backtrace,
     },
-
     #[snafu(display("Value can't be calculated, only rendered directly"))]
     InvalidCalculateCall { backtrace: Backtrace },
+
     #[snafu(display("Sub-Rendering failed"))]
     RenderCommandFailed {
         #[snafu(backtrace)]
@@ -78,11 +81,26 @@ pub enum ValueRenderError {
         source: Box<TemplateRenderError>,
     },
 
+    #[snafu(display("Filesystem could not be accessed successfully"))]
+    FailedAccessingFilesystem { backtrace: Backtrace },
+
     #[snafu(display("Failed to process load"))]
     LoadCommandFailed {
         #[snafu(backtrace)]
         #[snafu(source(from(ConfigReadError, Box::new)))]
         source: Box<ConfigReadError>,
+    },
+
+    ExecuteCommandFailed {
+        #[snafu(source(from(std::io::Error, Box::new)))]
+        source: Box<std::io::Error>,
+        backtrace: Backtrace,
+    },
+
+    ExecuteResultInvalid {
+        #[snafu(source(from(FromUtf8Error, Box::new)))]
+        source: Box<FromUtf8Error>,
+        backtrace: Backtrace,
     },
 
     #[snafu(display("Failed to resolve variable path: {}", variable_path))]
