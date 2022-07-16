@@ -7,21 +7,21 @@ local:
         value: "Administrative Districts"
 
 injection:
-  - a4:
+  - admin:
       render: level.glitter
       parameter:
         group:
           variable: group
         level:
           value: 4
-    a5:
+  - admin:
       render: level.glitter
       parameter:
         group:
           variable: group
         level:
           value: 5
-    a6:
+  - admin:
       render: level.glitter
       parameter:
         group:
@@ -30,8 +30,4 @@ injection:
           value: 6
         
 template: |
-  *> a4
-
-  *> a5
-
-  *> a6
+  *> admin
