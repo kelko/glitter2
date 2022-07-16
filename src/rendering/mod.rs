@@ -101,9 +101,23 @@ pub enum ValueRenderError {
         backtrace: Backtrace,
     },
 
-    #[snafu(display("Failed to resolve variable path: {}", variable_path))]
+    #[snafu(display(
+        "Failed to process variable definition: {}",
+        var_resolution_path.join("\n\t\t⇒ ")
+    ))]
+    FailedProcessingVariable {
+        var_resolution_path: Vec<String>,
+        #[snafu(backtrace)]
+        #[snafu(source(from(ValueRenderError, Box::new)))]
+        source: Box<ValueRenderError>,
+    },
+
+    #[snafu(display(
+        "Failed to resolve variable path: {}",
+        var_resolution_path.join("\n\t\t⇒")
+    ))]
     FailedResolvingVariable {
-        variable_path: String,
+        var_resolution_path: Vec<String>,
         backtrace: Backtrace,
     },
 
