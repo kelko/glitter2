@@ -28,9 +28,10 @@ impl StoredVariable {
         if key_path.is_empty() {
             return Self::Missing;
         }
-        let key = key_path.take_first();
+        let key = &key_path[0];
 
-        if let Some(value_definition) = block.get(&key) {
+        if let Some(value_definition) = block.get(key) {
+            key_path.drop_first();
             Self::from(value_definition, key_path)
         } else {
             Self::Missing

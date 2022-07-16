@@ -1,13 +1,16 @@
 [package]
 name = "glitter"
-version = "0.1.1"
-authors = [":kelko:"]
+version = "0.2.0"
+authors = [":kelko: <kelko@me.com>"]
 edition = "2021"
+license = "MIT"
+description = "General purpose template processor which enables the user to create flexible, configurable templates."
+categories = ["template-engine"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-snafu = "0.7"
+snafu = { version = "0.7", features = ["backtraces"]}
 clap = "3.2"
 yaml-rust = "0.4"
 exitcode = "1.1.2"

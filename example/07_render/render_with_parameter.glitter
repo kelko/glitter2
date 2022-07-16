@@ -1,0 +1,6 @@
+injection:
+  - parameterVal:
+      variable: param1
+  
+template: |-
+  The value of `parameterVal` is: *{parameterVal}

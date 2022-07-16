@@ -1,21 +1,28 @@
+global:
+  global_val:
+    value: "Global Value"
+
 local:
   got:
-    load: "l_select.gloss"
+    load: "l_passthrough.gloss"
     parameter:
-      val1:
+      param1:
+          value: "Val1"
+      param2:
         children: 
-          greet:
-            value: 'hallo'
-          gBye:
-            value: "bye"
+          value:
+            children:
+              inner:
+                variable: global_val
 
 injection:
-  - val: 
-      variable: got.result
-
+  - val1:
+      variable: got.loaded1
+    val2:
+      variable: got.loaded2
 
 #Result:
-#> bye world
+#> Val1 Global Value
 
 template: |-
-  *{val.title} *{val.body}
+  *{val1} *{val2.inner}

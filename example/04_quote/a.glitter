@@ -14,7 +14,7 @@ local:
       greeting:
         value: "Lok'Thar"
       cv:
-        quote: "navar.cv"
+        quote: "neghvar.cv"
 
 injection:
   - person:

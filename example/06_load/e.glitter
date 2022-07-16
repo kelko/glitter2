@@ -1,0 +1,21 @@
+local:
+  got:
+    load: "l_select.gloss"
+    parameter:
+      val1:
+        children: 
+          greet:
+            value: 'hallo'
+          gBye:
+            value: "bye"
+
+injection:
+  - val: 
+      variable: got.result
+
+
+#Result:
+#> bye world
+
+template: |-
+  *{val.title} *{val.body}

@@ -373,7 +373,7 @@ impl GlitterProcessor {
         let mut empty_path = ValuePath(vec![]);
         let var = StoredVariable::from(&definition, &mut empty_path);
 
-        match self.process_variable(var, &context, &request_source) {
+        match self.process_variable(var, &context, request_source) {
             NextVarProcessingInstruction::ReportMissing => {
                 panic!("Can't be happening. There is no var name, so it can't be not resolved")
             }
@@ -391,7 +391,7 @@ impl GlitterProcessor {
         &self,
         variable: StoredVariable,
         context: &Rc<ProcessingContext>,
-        request_source: &RequestSource,
+        request_source: RequestSource,
     ) -> NextVarProcessingInstruction {
         return match variable {
             StoredVariable::Missing => NextVarProcessingInstruction::ReportMissing,
@@ -399,17 +399,13 @@ impl GlitterProcessor {
                 Box::new(RenderableRawValue::from(actual_value)),
             ),
             StoredVariable::LocalReference(new_path) => {
-                NextVarProcessingInstruction::ContinueElsewhere(
-                    None,
-                    new_path,
-                    request_source.clone(),
-                )
+                NextVarProcessingInstruction::ContinueElsewhere(None, new_path, request_source)
             }
             StoredVariable::DistantReference(new_path, new_context) => {
                 NextVarProcessingInstruction::ContinueElsewhere(
                     Some(new_context),
                     new_path,
-                    request_source.clone(),
+                    request_source,
                 )
             }
             StoredVariable::Instruction(instruction, new_path) => match instruction {
@@ -418,8 +414,8 @@ impl GlitterProcessor {
                 ),
                 ProcessingInstruction::Import(file) => {
                     match self.import_yaml(self.resolve_filename(&file, &request_source, context)) {
-                        Ok(context) => NextVarProcessingInstruction::ContinueElsewhere(
-                            Some(context),
+                        Ok(import_context) => NextVarProcessingInstruction::ContinueElsewhere(
+                            Some(import_context),
                             new_path,
                             RequestSource::CallingContext,
                         ),
@@ -432,8 +428,8 @@ impl GlitterProcessor {
                         parameter,
                         Rc::clone(context),
                     ) {
-                        Ok(context) => NextVarProcessingInstruction::ContinueElsewhere(
-                            Some(context),
+                        Ok(load_context) => NextVarProcessingInstruction::ContinueElsewhere(
+                            Some(load_context),
                             new_path,
                             RequestSource::CallingContext,
                         ),
@@ -484,6 +480,7 @@ impl GlitterProcessor {
                         .into_iter()
                         .map(|v| v.unwrap())
                         .collect::<Vec<_>>();
+
                     NextVarProcessingInstruction::ReturnValue(Box::new(
                         RenderableExecutionResult::from(
                             executable,
@@ -510,7 +507,7 @@ impl GlitterProcessor {
             storages = Self::storages_for(&self.global, &context, &request_source);
 
             let (result, next_request_source) = Self::read_variable(&storages, &mut variable_path);
-            return match self.process_variable(result, &context, &next_request_source) {
+            return match self.process_variable(result, &context, next_request_source) {
                 NextVarProcessingInstruction::ReportMissing => FailedResolvingVariableSnafu {
                     variable_path: current_variable_path,
                 }
@@ -574,17 +571,17 @@ pub(crate) struct ValuePath(Vec<String>);
 impl ValuePath {
     #[inline(always)]
     fn append(&mut self, other: &mut ValuePath) {
-        self.0.append(&mut other.0)
+        self.0.append(&mut other.0);
     }
 
     #[inline(always)]
     pub(crate) fn is_empty(&self) -> bool {
-        return self.0.is_empty();
+        self.0.is_empty()
     }
 
     #[inline(always)]
-    pub(crate) fn take_first(&mut self) -> String {
-        self.0.remove(0)
+    pub(crate) fn drop_first(&mut self) {
+        self.0.remove(0);
     }
 
     #[inline(always)]

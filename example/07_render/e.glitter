@@ -1,0 +1,18 @@
+injection:
+  - rendered:
+      render: "render_with_parameter.glitter"
+      parameter:
+        param1:
+          value: 'holla'
+  - rendered:
+      render: "render_with_parameter.glitter"
+      parameter:
+        param1:
+          value: "hello"
+
+#Result:
+#> The value of `parameterVal` is: holla
+#> The value of `parameterVal` is: hello
+
+template: |
+  *> rendered
