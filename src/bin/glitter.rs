@@ -1,5 +1,3 @@
-#![warn(rust_2018_idioms)]
-
 #[macro_use]
 extern crate clap;
 
@@ -12,7 +10,7 @@ use glitter::{process, report};
 
 fn main() {
     let options = clap_app!(rodata =>
-        (version: "0.1")
+        (version: "0.2")
         (author: ":kelko:")
         (about: "glitter Template Processor")
         (@arg INPUT: +required "The glitter file to process")
