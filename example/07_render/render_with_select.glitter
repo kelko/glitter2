@@ -5,12 +5,12 @@ global:
 local:
   val1:
     select:
-      - case: (DEFINED ignoreme)
+      - case: =( GET(ignoreme) ∅)
         value: global not ignored
       - value: global ignored
   val2:
     select:
-        - case: (= (GET param1) 'hello')
+        - case: =( GET(param1) 'hello')
           value: passed hello
         - value: not passed hello
 

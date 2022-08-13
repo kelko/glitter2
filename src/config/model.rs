@@ -7,6 +7,7 @@ pub enum RawValue {
     Integer(i64),
     Float(String),
     String(String),
+    None,
 }
 
 impl Display for RawValue {
@@ -15,6 +16,7 @@ impl Display for RawValue {
             RawValue::Boolean(bool) => bool.fmt(f),
             RawValue::Integer(int) => int.fmt(f),
             RawValue::Float(string) | RawValue::String(string) => string.fmt(f),
+            RawValue::None => f.write_str("∅"),
         }
     }
 }

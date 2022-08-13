@@ -11,6 +11,7 @@ use crate::rendering::template_rendering::TemplateRenderer;
 pub mod config;
 pub mod processing;
 pub mod rendering;
+mod valma;
 
 #[derive(Debug, Snafu)]
 pub enum GlitterError {

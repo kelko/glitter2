@@ -14,3 +14,4 @@ snafu = { version = "0.7", features = ["backtraces"]}
 clap = "3.2"
 yaml-rust = "0.4"
 exitcode = "1.1.2"
+peg = "0.8.0"

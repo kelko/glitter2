@@ -1,14 +1,14 @@
 local:
   kelko:
     select:
-      - case: "(= (GET val1) 'hallo')"
+      - case: =( GET(val1) 'hallo')
         value: no
       - value: yes
   val1:
     value: hallo
   navar:
     select:
-      - case: "(= (GET val1) 'hallo')"
+      - case: =( GET(val1) 'hallo')
         value: yes
       - value: no
 

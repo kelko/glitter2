@@ -41,6 +41,7 @@ impl RenderableVariable for RenderableRawValue {
             RawValue::Float(value) | RawValue::String(value) => output
                 .write(value.as_bytes())
                 .context(FailedWritingTextSnafu)?,
+            RawValue::None => 0,
         };
 
         Ok(())
