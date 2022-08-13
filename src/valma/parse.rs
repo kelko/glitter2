@@ -25,7 +25,7 @@ parser! {
 
         // compound type, but potentially general purpose
         pub(crate) rule range_expression() -> RangeExpression
-            = f_i:$(['['|'{']) whitespace()? f:(float_numeric()) whitespace()? "," whitespace()? t:(float_numeric()) whitespace()? t_i:$([']'|'}']) { RangeExpression { include_from: f_i == "[", from: f, include_to: f_i == "]", to: t} }
+            = f_i:$(['['|'(']) whitespace()? f:(float_numeric()) whitespace()? "," whitespace()? t:(float_numeric()) whitespace()? t_i:$([']'|')']) { RangeExpression { include_from: f_i == "[", from: f, include_to: f_i == "]", to: t} }
 
         // specific for "valma"
         rule raw_value() -> RawValue
@@ -38,28 +38,28 @@ parser! {
         pub(crate) rule variable_path() -> ValuePath
             = p:(identifier() ++ ".") { todo!() }
         rule value_expression() -> ValueExpression
-            = "GET(" whitespace() v:(variable_path()) whitespace()? ")" { ValueExpression::Get(v) }
-            / ("ADD"/"+"/"➕") "(" l:(value_expression() ++ whitespace()) whitespace()? ")" { ValueExpression::Add(l) }
-            / ("SUB"/"-"/"➖") "(" l:(value_expression() ++ whitespace()) whitespace()? ")" { ValueExpression::Subtract(l)  }
-            / ("MUL"/"*"/"×"/"✖️") "(" l:(value_expression() ++ whitespace()) whitespace()? ")" { ValueExpression::Multiply(l)  }
-            / ("DIV"/"/"/"÷"/"∕"/"➗") "(" l:(value_expression() ++ whitespace()) whitespace()? ")" { ValueExpression::Divide(l) }
-            / ("PWR"/"🔌"/"🔋") "(" f:(value_expression()) whitespace() s:(value_expression()) whitespace()? ")" { ValueExpression::Power(Box::new(f), Box::new(s)) }
-            / ("ROOT"/"√") "(" f:(value_expression()) whitespace() s:(value_expression()) whitespace()? ")" { ValueExpression::Root(Box::new(f), Box::new(s)) }
+            = "GET{" whitespace() v:(variable_path()) whitespace()? "}" { ValueExpression::Get(v) }
+            / ("ADD"/"+"/"➕") "{" l:(value_expression() ++ whitespace()) whitespace()? "}" { ValueExpression::Add(l) }
+            / ("SUB"/"-"/"➖") "{" l:(value_expression() ++ whitespace()) whitespace()? "}" { ValueExpression::Subtract(l)  }
+            / ("MUL"/"*"/"×"/"✖️") "{" l:(value_expression() ++ whitespace()) whitespace()? "}" { ValueExpression::Multiply(l)  }
+            / ("DIV"/"/"/"÷"/"∕"/"➗") "{" l:(value_expression() ++ whitespace()) whitespace()? "}" { ValueExpression::Divide(l) }
+            / ("PWR"/"🔌"/"🔋") "{" f:(value_expression()) whitespace() s:(value_expression()) whitespace()? "}" { ValueExpression::Power(Box::new(f), Box::new(s)) }
+            / ("ROOT"/"√") "{" f:(value_expression()) whitespace() s:(value_expression()) whitespace()? "}" { ValueExpression::Root(Box::new(f), Box::new(s)) }
             / r:(raw_value()) { ValueExpression::Raw(r) }
         rule match_expression() -> MatchExpression
-            = "=(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? ")" { MatchExpression::Equal(Box::new(f), Box::new(s)) }
-            / ("!="/"≠") "(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? ")" { MatchExpression::NotEqual(Box::new(f), Box::new(s)) }
-            / ">(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()?")" { MatchExpression::Greater(Box::new(f), Box::new(s)) }
-            / (">="/"≥") "(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? ")" { MatchExpression::GreaterEqual(Box::new(f), Box::new(s)) }
-            / "<(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? ")" { MatchExpression::Less(Box::new(f), Box::new(s)) }
-            / ("<="/"≤") "(" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? ")" { MatchExpression::LessEqual(Box::new(f), Box::new(s)) }
-            / ("INSIDE"/"∈") "(" whitespace() f:(value_expression()) whitespace() r:(range_expression()) whitespace()? ")" { MatchExpression::Inside(Box::new(f), r) }
-            / ("OUTSIDE"/"∉") "(" whitespace() f:(value_expression()) whitespace() r:(range_expression()) whitespace()? ")" { MatchExpression::Outside(Box::new(f), r) }
-            / ("LIKE"/"👍") "(" whitespace() f:(value_expression()) whitespace() s:(string_value()) whitespace()? ")" { MatchExpression::Like(Box::new(f), String::from(s)) }
-            / ("UNLIKE"/"👎") "(" whitespace() f:(value_expression()) whitespace() s:(string_value()) whitespace()? ")" { MatchExpression::Unlike(Box::new(f), String::from(s)) }
-            / ("!"/"NOT"/"¬") "(" whitespace() m:(match_expression()) whitespace()? ")" { MatchExpression::Not(Box::new(m)) }
-            / ("AND"/"∧") "(" l:(match_expression() ++ whitespace()) whitespace()? ")" { MatchExpression::And(l) }
-            / ("OR"/"∨") "(" l:(match_expression() ++ whitespace()) whitespace()? ")" {MatchExpression::Or(l) }
+            = "={" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? "}" { MatchExpression::Equal(Box::new(f), Box::new(s)) }
+            / ("!="/"≠") "{" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? "}" { MatchExpression::NotEqual(Box::new(f), Box::new(s)) }
+            / ">{" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()?"}" { MatchExpression::Greater(Box::new(f), Box::new(s)) }
+            / (">="/"≥") "{" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? "}" { MatchExpression::GreaterEqual(Box::new(f), Box::new(s)) }
+            / "<{" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? "}" { MatchExpression::Less(Box::new(f), Box::new(s)) }
+            / ("<="/"≤") "{" whitespace() f:(valma_expression()) whitespace() s:(valma_expression()) whitespace()? "}" { MatchExpression::LessEqual(Box::new(f), Box::new(s)) }
+            / ("INSIDE"/"∈") "{" whitespace() f:(value_expression()) whitespace() r:(range_expression()) whitespace()? "}" { MatchExpression::Inside(Box::new(f), r) }
+            / ("OUTSIDE"/"∉") "{" whitespace() f:(value_expression()) whitespace() r:(range_expression()) whitespace()? "}" { MatchExpression::Outside(Box::new(f), r) }
+            / ("LIKE"/"👍") "{" whitespace() f:(value_expression()) whitespace() s:(string_value()) whitespace()? "}" { MatchExpression::Like(Box::new(f), String::from(s)) }
+            / ("UNLIKE"/"👎") "{" whitespace() f:(value_expression()) whitespace() s:(string_value()) whitespace()? "}" { MatchExpression::Unlike(Box::new(f), String::from(s)) }
+            / ("!"/"NOT"/"¬") "{" whitespace() m:(match_expression()) whitespace()? "}" { MatchExpression::Not(Box::new(m)) }
+            / ("AND"/"∧") "{" l:(match_expression() ++ whitespace()) whitespace()? "}" { MatchExpression::And(l) }
+            / ("OR"/"∨") "{" l:(match_expression() ++ whitespace()) whitespace()? "}" {MatchExpression::Or(l) }
         pub(crate) rule valma_expression() -> Expression
             = v:(value_expression()) { Expression::Value(v) }
             / m:(match_expression()) { Expression::Match(m) }
