@@ -5,12 +5,12 @@ global:
 local:
   val1:
     select:
-      - case: ={ GET{ignoreme} ∅}
+      - case: ∃{ignoreme}
         value: global not ignored
       - value: global ignored
   val2:
     select:
-        - case: ={ GET{param1} 'hello'}
+        - case: ={ ${param1} 'hello'}
           value: passed hello
         - value: not passed hello
 

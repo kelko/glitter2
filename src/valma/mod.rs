@@ -25,6 +25,8 @@ pub(crate) enum ValueExpression {
 }
 
 pub(crate) enum MatchExpression {
+    Exist(ValuePath),
+    DoesntExist(ValuePath),
     Equal(Box<Expression>, Box<Expression>),
     NotEqual(Box<Expression>, Box<Expression>),
     Greater(Box<Expression>, Box<Expression>),
