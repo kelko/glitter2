@@ -46,11 +46,6 @@ impl Index<usize> for ValuePath {
 impl From<&String> for ValuePath {
     #[inline(always)]
     fn from(path: &String) -> Self {
-        ValuePath(
-            path.split(".")
-                .into_iter()
-                .map(|s| s.to_owned())
-                .collect::<Vec<_>>(),
-        )
+        ValuePath(path.split('.').map(|s| s.to_owned()).collect::<Vec<_>>())
     }
 }

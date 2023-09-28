@@ -32,8 +32,8 @@ impl ProcessingContext {
 
     fn build_injection_store(
         injection_source: Vec<VariableDefinitionBlock>,
-        filename: &String,
-        directory: &String,
+        filename: &str,
+        directory: &str,
     ) -> Vec<Rc<VariableStore>> {
         let mut iteration_count = 0;
         injection_source
@@ -48,11 +48,11 @@ impl ProcessingContext {
                     )
                     .insert(
                         "$filename",
-                        ValueDefinition::Value(RawValue::String(filename.clone())),
+                        ValueDefinition::Value(RawValue::String(filename.into())),
                     )
                     .insert(
                         "$directory",
-                        ValueDefinition::Value(RawValue::String(directory.clone())),
+                        ValueDefinition::Value(RawValue::String(directory.into())),
                     );
 
                 Rc::new(store)

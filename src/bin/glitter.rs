@@ -5,8 +5,6 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-use exitcode;
-
 use glitter::{process, report};
 
 #[derive(Parser)]
@@ -93,7 +91,7 @@ fn main() {
         std::process::exit(exitcode::SOFTWARE);
     }
 
-    if let Err(_) = output_writer.flush() {
+    if output_writer.flush().is_err() {
         eprintln!("Could not flush output. File might not contain all content");
         std::process::exit(exitcode::IOERR);
     }

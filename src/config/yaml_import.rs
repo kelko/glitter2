@@ -44,16 +44,13 @@ impl YamlImporter {
 
         let yaml_stream = YamlLoader::load_from_str(&buffer).context(YamlSnafu)?;
         if let Yaml::Hash(yaml_content) = &yaml_stream[0] {
-            self.convert_hash(yaml_content)
+            Self::convert_hash(yaml_content)
         } else {
             IncorrectYamlSnafu {}.fail()
         }
     }
 
-    pub fn convert_hash(
-        &self,
-        hash: &Hash,
-    ) -> Result<VariableDefinitionBlock, YamlImportReadError> {
+    pub fn convert_hash(hash: &Hash) -> Result<VariableDefinitionBlock, YamlImportReadError> {
         let mut result = VariableDefinitionBlock::new();
 
         for hash_key in hash.keys() {
@@ -62,11 +59,11 @@ impl YamlImporter {
             match &hash[hash_key] {
                 Yaml::Hash(sub_hash) => result.insert(
                     key_string,
-                    ValueDefinition::Object(self.convert_hash(&sub_hash)?),
+                    ValueDefinition::Object(Self::convert_hash(sub_hash)?),
                 ),
                 Yaml::Integer(int_value) => result.insert(
                     key_string,
-                    ValueDefinition::Value(RawValue::Integer(int_value.clone())),
+                    ValueDefinition::Value(RawValue::Integer(*int_value)),
                 ),
                 Yaml::String(string_value) => result.insert(
                     key_string,
@@ -74,7 +71,7 @@ impl YamlImporter {
                 ),
                 Yaml::Boolean(bool_value) => result.insert(
                     key_string,
-                    ValueDefinition::Value(RawValue::Boolean(bool_value.clone())),
+                    ValueDefinition::Value(RawValue::Boolean(*bool_value)),
                 ),
                 Yaml::Real(real_as_string) => result.insert(
                     key_string,

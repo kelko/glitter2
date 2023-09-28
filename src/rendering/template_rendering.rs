@@ -158,7 +158,7 @@ impl<'a> TemplateRenderer<'a> {
         }
     }
 
-    fn is_processing_block(&self, chars: &Vec<char>, char_index: usize) -> ProcessingStatement {
+    fn is_processing_block(&self, chars: &[char], char_index: usize) -> ProcessingStatement {
         if chars[char_index + 1] == self.config.start_block {
             ProcessingStatement::Block
         } else if chars[char_index + 1] == self.config.line_quote {
@@ -186,65 +186,54 @@ impl<'a> TemplateRenderer<'a> {
     fn extract_enclosed_var_path(
         &self,
         template: &str,
-        chars: &Vec<char>,
+        chars: &[char],
         start_position: usize,
         end_marker: char,
     ) -> Result<(String, usize), TemplateRenderError> {
-        let mut end = start_position;
-        let mut hit_end = false;
-
-        for char_index in start_position..template.len() {
-            if chars[char_index] == end_marker {
-                hit_end = true;
-                break;
-            }
-
-            end = char_index;
-        }
-
-        if !hit_end {
+        if let Some(relative_index) = chars[start_position..]
+            .iter()
+            .position(|&c| c == end_marker)
+        {
+            Self::return_variable_name(template, start_position, relative_index)
+        } else {
             NonTerminatedProcessingBlockSnafu {
                 start_at: start_position,
             }
             .fail()
-        } else if end == start_position {
-            EmptyProcessingBlockSnafu {
-                start_at: start_position,
-            }
-            .fail()
-        } else {
-            Ok((
-                template[start_position..=end].trim().to_owned(),
-                end - start_position + 1,
-            ))
         }
     }
 
     fn extract_trailing_var_path(
         &self,
         template: &str,
-        chars: &Vec<char>,
+        chars: &[char],
         start_position: usize,
     ) -> Result<(String, usize), TemplateRenderError> {
-        let mut end = start_position;
-
-        for char_index in start_position..template.len() {
-            if chars[char_index] == '\n' {
-                break;
-            }
-
-            end = char_index;
+        if let Some(relative_index) = chars[start_position..].iter().position(|&c| c == '\n') {
+            Self::return_variable_name(template, start_position, relative_index)
+        } else {
+            Ok((
+                template[start_position..].trim().to_owned(),
+                template.len() - start_position,
+            ))
         }
+    }
 
-        if end == start_position {
+    fn return_variable_name(
+        template: &str,
+        start_position: usize,
+        relative_index: usize,
+    ) -> Result<(String, usize), TemplateRenderError> {
+        if relative_index == 1 {
             EmptyProcessingBlockSnafu {
                 start_at: start_position,
             }
             .fail()
         } else {
+            let end = start_position + relative_index - 1;
             Ok((
                 template[start_position..=end].trim().to_owned(),
-                end - start_position + 1,
+                relative_index,
             ))
         }
     }

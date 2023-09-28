@@ -110,8 +110,8 @@ impl TryFrom<&Yaml> for RawValue {
     fn try_from(value: &Yaml) -> Result<RawValue, Self::Error> {
         match value {
             Yaml::String(string_value) => Ok(RawValue::String(string_value.clone())),
-            Yaml::Boolean(bool_value) => Ok(RawValue::Boolean(bool_value.clone())),
-            Yaml::Integer(int_value) => Ok(RawValue::Integer(int_value.clone())),
+            Yaml::Boolean(bool_value) => Ok(RawValue::Boolean(*bool_value)),
+            Yaml::Integer(int_value) => Ok(RawValue::Integer(*int_value)),
             Yaml::Real(real_as_string) => Ok(RawValue::Float(real_as_string.clone())),
             Yaml::Null => EmptyRawValueSnafu {}.fail(),
             _ => UnsupportedRawValueTypeSnafu {}.fail(),
@@ -125,7 +125,7 @@ impl TryFrom<&Yaml> for ValueDefinition {
     fn try_from(var_declaration: &Yaml) -> Result<ValueDefinition, Self::Error> {
         let mut yaml_source = String::new();
         let mut emitter = yaml_rust::emitter::YamlEmitter::new(&mut yaml_source);
-        if emitter.dump(&var_declaration).is_err() {
+        if emitter.dump(var_declaration).is_err() {
             yaml_source = String::from("(INVALID YAML)");
         }
 
@@ -225,7 +225,7 @@ impl TryFrom<&Yaml> for TemplateValue {
 
         let mut yaml_source = String::new();
         let mut emitter = yaml_rust::emitter::YamlEmitter::new(&mut yaml_source);
-        if emitter.dump(&value).is_err() {
+        if emitter.dump(value).is_err() {
             yaml_source = String::from("(INVALID YAML)");
         }
 
@@ -287,7 +287,7 @@ impl ConfigReader {
     }
 
     fn read_injections(
-        injections: &Vec<Yaml>,
+        injections: &[Yaml],
     ) -> Result<Vec<VariableDefinitionBlock>, ConfigReadError> {
         let mut variable_block_list = Vec::<VariableDefinitionBlock>::new();
 
@@ -400,5 +400,11 @@ impl ConfigReader {
             }
             .fail(),
         }
+    }
+}
+
+impl Default for ConfigReader {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -130,7 +130,7 @@ impl GlitterProcessor {
         request_source: &RequestSource,
     ) -> Vec<(Rc<VariableStore>, RequestSource)> {
         match request_source {
-            RequestSource::Template(iteration_count) => (0..=iteration_count.clone())
+            RequestSource::Template(iteration_count) => (0..=*iteration_count)
                 .rev()
                 .map(|i| (Rc::clone(&context.injection[i]), RequestSource::Injection))
                 .collect::<Vec<_>>(),
@@ -219,7 +219,7 @@ impl GlitterProcessor {
         if let Some(dir) = path.parent() {
             Ok(dir.to_str().unwrap().to_owned())
         } else {
-            return FailedAccessingFilesystemSnafu {}.fail();
+            FailedAccessingFilesystemSnafu {}.fail()
         }
     }
 
@@ -256,7 +256,7 @@ impl GlitterProcessor {
         context: &Rc<ProcessingContext>,
         request_source: RequestSource,
     ) -> Result<NextVarProcessingInstruction, ValueRenderError> {
-        return match variable {
+        match variable {
             StoredVariable::Missing => Ok(NextVarProcessingInstruction::ReportMissing),
             StoredVariable::Value(actual_value) => Ok(NextVarProcessingInstruction::ReturnValue(
                 Box::new(RenderableRawValue::from(actual_value)),
@@ -355,7 +355,7 @@ impl GlitterProcessor {
                     )))
                 }
             },
-        };
+        }
     }
 
     fn resolve_var(

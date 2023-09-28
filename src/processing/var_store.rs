@@ -39,7 +39,7 @@ impl StoredVariable {
     }
 
     pub(crate) fn from(definition: &ValueDefinition, key_path: &mut ValuePath) -> Self {
-        return match definition {
+        match definition {
             ValueDefinition::Value(value) => StoredVariable::Value(value.clone()),
             ValueDefinition::Object(map) => StoredVariable::out_of_block(map, key_path),
             ValueDefinition::Variable(value_path) => {
@@ -76,7 +76,7 @@ impl StoredVariable {
                 ),
                 key_path.clone(),
             ),
-        };
+        }
     }
 }
 
