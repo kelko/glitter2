@@ -1,31 +1,29 @@
-#[macro_use]
 extern crate clap;
 
+use clap::Parser;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::path::PathBuf;
 
 use exitcode;
 
 use glitter::{process, report};
 
-fn main() {
-    let options = clap_app!(rodata =>
-        (version: "0.2")
-        (author: ":kelko:")
-        (about: "glitter Template Processor")
-        (@arg INPUT: +required "The glitter file to process")
-        (@arg OUTPUT: +required "The path to the output file")
-    )
-    .get_matches();
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// File name of the Input. `-` for stdin (default)
+    input: Option<PathBuf>,
 
-    let input_path = options
-        .value_of("INPUT")
-        .expect("Missing required parameter INPUT")
-        .to_string();
-    let output_path = options
-        .value_of("OUTPUT")
-        .expect("Missing required parameter OUTPUT")
-        .to_string();
+    /// File name of the Output. `-` for stdout (default)
+    output: Option<PathBuf>,
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    let input_path = cli.input.unwrap_or_else(|| PathBuf::from("-"));
+    let output_path = cli.output.unwrap_or_else(|| PathBuf::from("-"));
 
     let stdin = io::stdin();
     let stdout = io::stdout();
@@ -38,7 +36,7 @@ fn main() {
         .unwrap()
         .to_owned();
 
-    let mut input_reader: Box<dyn BufRead> = if input_path == "-" {
+    let mut input_reader: Box<dyn BufRead> = if input_path == PathBuf::from("-") {
         filename = "-".to_owned();
         starting_directory = cwd;
         Box::new(stdin.lock())
@@ -72,7 +70,7 @@ fn main() {
         Box::new(BufReader::new(input_file))
     };
 
-    let mut output_writer: Box<dyn Write> = if output_path == "-" {
+    let mut output_writer: Box<dyn Write> = if output_path == PathBuf::from("-") {
         Box::new(stdout.lock())
     } else {
         let output_file = if let Ok(file) = File::create(output_path) {
