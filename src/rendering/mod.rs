@@ -1,6 +1,7 @@
+use std::backtrace::Backtrace;
 use std::string::FromUtf8Error;
 
-use snafu::{Backtrace, Snafu};
+use snafu::Snafu;
 
 use crate::config::reader::ConfigReadError;
 use crate::rendering::template_rendering::TemplateRenderer;

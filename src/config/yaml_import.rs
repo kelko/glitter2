@@ -1,6 +1,7 @@
+use std::backtrace::Backtrace;
 use std::io::BufRead;
 
-use snafu::{Backtrace, ResultExt, Snafu};
+use snafu::{ResultExt, Snafu};
 use yaml_rust::{yaml::Hash, Yaml, YamlLoader};
 
 use crate::config::model::{RawValue, ValueDefinition, VariableDefinitionBlock};
