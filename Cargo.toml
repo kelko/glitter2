@@ -10,7 +10,7 @@ categories = ["template-engine"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-snafu = { version = "0.8.6"}
+snafu = { version = "0.8.7"}
 clap = { version = "4.5", features = ["derive"] }
 yaml-rust = "0.4"
 exitcode = "1.1.2"
